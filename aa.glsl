@@ -1,4 +1,4 @@
-// Anti-Aliasing Tests - rev. 28
+// Anti-Aliasing Tests - rev. 29
 // May 21-26, 2016
 //
 // Authors: 
@@ -9,13 +9,13 @@
 // Methods:                     # Samples:
 // ----------------------------------------------
 // 1. none                      1
-// 2. standard 2x2 supersample  4
-// 3. 3Dfx rotated grid         4
-// 4. nVidia Quincunx           5 (actually 2, since 4 of the 5 samples is used for 4 pixels)
-// 5. standard NxN supersample  N^2 (set in #define N_NXN  below)
-// 6. random supersample        N^2 (set in #define N_RAND below)
-#define N_NXN  4 // See Note 5.
-#define N_RAND 8 // See Note 6.
+// 2. nVidia Quincunx           2
+// 3. standard 2x2 supersample  4
+// 4. 3Dfx rotated grid         4
+// 5. standard NxN supersample  4^2 (N^2 set in #define N_NXN  below)
+// 6. random supersample        8^2 (N^2 set in #define N_RAND below)
+#define N_NXN  4 // See Note 5 above.
+#define N_RAND 8 // See Note 6 above.
 //  4x 4 =   16 samples
 //  8x 8 =   64 samples
 // 16x16 =  256 samples
@@ -24,7 +24,7 @@
 
 // ---- SETTINGS --------------------------------
 
-#define CIRCLE_PERCENTAGE_OF_SCREEN 0.95
+#define CIRCLE_PERCENTAGE_OF_SCREEN 0.90
 #define MIN_ZOOM 1.0
 #define MAX_ZOOM 8.0
 #define COLOR_TITLE      vec3( 0.0, 0.3, 1.0 ) // text
@@ -32,11 +32,9 @@
 #define COLOR_ZOOM       vec3( 0.0, 0.7, 0.0 )
 #define COLOR_EQUALS     vec3( 0.0, 0.0, 0.0 )
 #define COLOR_ZOOMFACTOR vec3( 1.0, 0.0, 0.0 )
-
-
-#define GAMMA_CORRECTION 2.2  
-	// check to see if your gamma is 2.2 here: http://epaperpress.com/monitorcal/gamma.html
-	// TODO -- should make gamma correction tester for monitor, so people can calibrate.
+#define GAMMA_CORRECTION 2.2
+	// check gamma:
+	// https://www.shadertoy.com/view/ldVSD1
 
 //#define DEBUG_DISABLE_BLACK_BAR_SPLITS
 //#define DEBUG_DISABLE_TEXT
@@ -45,6 +43,8 @@
 
 
 // ---- GLOBALS --------------------------------
+
+	// TODO -- could prefix these with "g" or "g_"
 
     // quantized zoom:
     float ZOOM;
@@ -86,7 +86,7 @@ float DigitBin(const in int x)
     if (x < 78)
         return // Glyphs added by Michael Pohoreski
            x==42 ?  21072.0 // *
-          :x==45 ?   3840.0 // -
+          //:x==45 ?   3840.0 // -
           :x==61 ?  61680.0 // =
           //:x==65 ? 434073.0 // A
           //:x==66 ? 497559.0 // B
@@ -182,9 +182,7 @@ float noise( vec2 location ) {
     return 
         fract(
             sin(
-                dot(
-                    location.xy, vec2(12.9898, 78.233)
-                )
+                dot(location.xy, vec2(12.9898, 78.233))
             ) * 43758.5453
         );
 }
@@ -210,7 +208,10 @@ vec3 pattern1( vec2 uv )
         ((g <  0.6    ) && (g >  0.4    )) ||
         ((g < (0.2+dt)) && (g > (0.1+dt)));
     
-    const float PI = 3.1415962; // atan(1.) * 4.;
+    const float PI = 3.1415926535897932384626;
+    
+    // TODO -- can't we replace atan() with some clever dot(),
+    //         after all it should return -1..+1, and we could use that as an angle.
     bool insideSpokes = mod(atan(p.y, p.x) + quarterTime/10., PI/8.) < 0.15;
     
     float v = mod(float(insideCircle) *  1.0 + 
@@ -223,33 +224,26 @@ vec3 pattern1( vec2 uv )
 // patternSet_2Dchecker
 vec3 pattern2(vec2 uv)
 {
-    // TODO -------- ROTATION ISN'T WORKING PROPERLY.....
-    
     // correct for aspect ratio    
     float aspect = iResolution.y/iResolution.x;
-    uv.y *= aspect;
     
-    // compress in Y
-    //uv.x *= (0.5 - uv.x);
-    //uv.y *= (0.5 - uv.y);
-
     // rotate with time distortion in Y
-    float quarterTime = iGlobalTime * 0.05 * 24.0;
-    float distortTime = quarterTime; // + uv.y * 3.;    
-    float angle = -distortTime * 0.2;
+    float angle = -iGlobalTime * 0.2;
     
     // translate
-    uv.xy -= vec2(0.5);
+    uv.xy -= vec2(0.5, 0.5);
+    uv.y *= aspect;
     // rotate
    	vec2 p = rotateXY( uv, angle );
     // translate back
-    p += vec2(0.5);
+    p += vec2(0.5, 0.5);
     
-    const float NUM_CELLS  = 8.0;
+    const float NUM_CELLS = 8.0;
 
     // checkerboard
     float checkerboard = (
-        mod(floor(p.x*NUM_CELLS),2.0) == mod(floor(p.y*NUM_CELLS),2.0) 
+        mod(floor(p.x*NUM_CELLS),2.0) == 
+        mod(floor(p.y*NUM_CELLS),2.0) 
             ? 1.0
             : 0.0);  
     return vec3(checkerboard);
@@ -525,8 +519,10 @@ vec3 drawTitle( in vec2 fragCoord,
 
 #ifndef DEBUG_DISABLE_TEXT
     gvPrintCharXY.y = iResolution.y - gvFontSize.y - 1.;
-    gvPrintCharXY.x = mx0*scale - center;
-    color = Char( color, COLOR_TITLE, fragCoord, 45. ); // -
+    
+    // no sense in showing anything for "none"
+    //gvPrintCharXY.x = mx0*scale - center;
+    //color = Char( color, COLOR_TITLE, fragCoord, 45. ); // -
 
     gvPrintCharXY.x = mx1*scale - center;
     color = Char( color, COLOR_TITLE, fragCoord, 81. ); // Q
