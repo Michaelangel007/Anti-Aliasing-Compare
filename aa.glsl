@@ -1,5 +1,5 @@
-// Anti-Aliasing Tests - rev. 26
-// May 21 - 24, 2016
+// Anti-Aliasing Tests - rev. 27
+// May 21 - 26, 2016
 //
 // Authors: 
 //   Jason Doucette:    https://www.shadertoy.com/user/JasonD        
@@ -27,7 +27,8 @@
 #define CIRCLE_PERCENTAGE_OF_SCREEN 0.95
 #define MIN_ZOOM 1.0
 #define MAX_ZOOM 8.0
-#define BG_COLOR vec3( 1.0, 0.9, 0.8 )
+#define COLOR_TITLE vec3( 0.0, 0.3, 1.0 ) // text
+#define BG_COLOR vec3( 1.0, 0.8, 0.6 )
 #define GAMMA_CORRECTION 2.2  
 	// check to see if your gamma is 2.2 here: http://epaperpress.com/monitorcal/gamma.html
 	// TODO -- should make gamma correction tester for monitor, so people can calibrate.
@@ -514,38 +515,35 @@ vec3 drawTitle( in vec2 fragCoord,
 {
     vec3 color = BG_COLOR;
     
-    // colors for text
-    vec3 blue = vec3( 0.0, 0.5, 1.0 );
-
     float scale  = iResolution.x;
     float center = (mx1 - mx0) * 0.5 * scale;
 
 #ifndef DEBUG_DISABLE_TEXT
     gvPrintCharXY.y = iResolution.y - gvFontSize.y - 1.;
     gvPrintCharXY.x = mx0*scale - center;
-    color = Char( color, blue, fragCoord, 45. ); // -
+    color = Char( color, COLOR_TITLE, fragCoord, 45. ); // -
 
     gvPrintCharXY.x = mx1*scale - center;
-    color = Char( color, blue, fragCoord, 81. ); // Q
-    color = Char( color, blue, fragCoord, 67. ); // C
+    color = Char( color, COLOR_TITLE, fragCoord, 81. ); // Q
+    color = Char( color, COLOR_TITLE, fragCoord, 67. ); // C
 
     gvPrintCharXY.x = mx2*scale - center;
-    color = Char( color, blue, fragCoord,  2. ); // 2
-    color = Char( color, blue, fragCoord, 42. ); // *
+    color = Char( color, COLOR_TITLE, fragCoord,  2. ); // 2
+    color = Char( color, COLOR_TITLE, fragCoord, 42. ); // *
 
     gvPrintCharXY.x = mx3*scale - center;
-    color = Char( color, blue, fragCoord,  3. ); // 3
-    color = Char( color, blue, fragCoord, 68. ); // D
+    color = Char( color, COLOR_TITLE, fragCoord,  3. ); // 3
+    color = Char( color, COLOR_TITLE, fragCoord, 68. ); // D
 
     gvPrintCharXY.x = mx4*scale - center;
-    color = Char( color, blue, fragCoord, 78. ); // N
-    color = Char( color, blue, fragCoord, 42. ); // *
+    color = Char( color, COLOR_TITLE, fragCoord, 78. ); // N
+    color = Char( color, COLOR_TITLE, fragCoord, 42. ); // *
 
     gvPrintCharXY.x = mx4*scale + center;
     //                          ^-- positive, to show on the other side of the line
 
-    color = Char( color, blue, fragCoord, 82. ); // R
-    color = Char( color, blue, fragCoord, 68. ); // D
+    color = Char( color, COLOR_TITLE, fragCoord, 82. ); // R
+    color = Char( color, COLOR_TITLE, fragCoord, 68. ); // D
 
 #endif // DEBUG_DISABLE_TEXT
 
@@ -572,12 +570,19 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     // NOTE: this will think it's a thumbnail, even when not, if you're in a very small browser window,
     //       since the site will shrink the output target to the size of a thumbnail.
     // ALSO: the site increases thumbnail sizes if your browser window is large; this makes life difficult! :(
-    if ((iMouse.z < 0.5) && 
-        (iResolution.y < 310.))
-    {
-        origM.x = 0.5; // center, to see most of the AA methods
-        origM.y = 1.5 / MAX_ZOOM; // 1.5 is the middle of the ZOOM=2 region
-    }
+
+    // method of changing X and Y without if-statements:
+    
+    float multChange = 
+        float(iMouse.z < 0.5) * 
+        float(iResolution.y < 310.0);
+    
+    // 0.5 = center, to see most of the AA methods
+	origM.x = mix(origM.x, 0.5, multChange);
+    
+    // 1.5 is the middle of the ZOOM=2 region
+	origM.y = mix(origM.y, 1.5 / MAX_ZOOM, multChange);
+
     
     // ---- ZOOM QUANTIZE ----
     
@@ -776,10 +781,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     color += pixelSet(uv + offset);
                 }
             }
-            color /= float(N_RAND * N_RAND);
-           
-        }
-        
+            color /= float(N_RAND * N_RAND);           
+        }        
     }
     
     // ---- GAMMA CORRECTION ----
