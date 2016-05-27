@@ -1,4 +1,4 @@
-// Anti-Aliasing Tests - rev. 30
+// Anti-Aliasing Tests - rev. 31
 // May 21-26, 2016
 //
 // Authors: 
@@ -228,7 +228,7 @@ vec3 pattern2(vec2 uv)
     float aspect = iResolution.y/iResolution.x;
     
     // rotate with time distortion in Y
-    float angle = -iGlobalTime * 0.2;
+    float angle = -iGlobalTime * 0.05;
     
     // translate
     uv.xy -= vec2(0.5, 0.5);
@@ -267,7 +267,7 @@ vec3 pattern3(vec2 uv)
          * cam.z;
 
     // rotate
-    float angle = iGlobalTime * 0.1;
+    float angle = iGlobalTime * 0.05;
 	cam.xy = rotateXY( cam.xy, angle );
 
     // textured
@@ -286,7 +286,7 @@ vec3 pixelSet(vec2 uv)
     vec2 p = uv.xy / res.xy; 
     
     // get slow time:
-    float tDistort = iGlobalTime * 1.25 + 
+    float tDistort = iGlobalTime * 0.8 + 
         dot( 
             origP, 
             vec2(0.5, 0.5) // NOTE: changing X vs. Y will change the angle of the swipe fade
@@ -715,11 +715,13 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             }
 
             color = vec3(
-                pixelSet(uv + vec2(-q.x, +q.y)) * w1 +
-                pixelSet(uv + vec2(+q.y, +q.x)) * w1 +
-                pixelSet(uv + vec2(+q.x, -q.y)) * w1 +
-                pixelSet(uv + vec2(-q.y, -q.x)) * w1 +
-                pixelSet(uv + vec2( 0.0,  0.0)) * w2
+                (
+                    pixelSet(uv + vec2(-q.x, +q.y)) +
+                	pixelSet(uv + vec2(+q.y, +q.x)) +
+                	pixelSet(uv + vec2(+q.x, -q.y)) +
+                	pixelSet(uv + vec2(-q.y, -q.x))
+                )                                     * w1 +
+                pixelSet(uv + vec2( 0.0,  0.0))       * w2
             );
         }
         
@@ -775,7 +777,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     
    
     // TODO -- if we're always doing grayscale, then we need to compute only one of these.
-    // TODO -- IN FACT, that goes for the ENTIRE PROGRAM, except for the bars after this:
+    //         in fact, that goes for the ENTIRE PROGRAM, except for the bars after this:
+    // CAUTION: It likely isn't any faster, since vec3(v) is probably just as fast as float(v)
+    //          And the HUD is colorized.  But we could return early for them.  But it makes the code ugly.
+    //          It only really saves on this gamma correction AFTER super-sampling is done:
     
     const float invGamma = 1. / GAMMA_CORRECTION;    
     color = vec3(pow(color.r, invGamma),
