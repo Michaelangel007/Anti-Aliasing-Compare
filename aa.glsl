@@ -1,4 +1,4 @@
-// Anti-Aliasing Tests - rev. 29
+// Anti-Aliasing Tests - rev. 30
 // May 21-26, 2016
 //
 // Authors: 
@@ -79,8 +79,8 @@ float DigitBin(const in int x)
           :x==5 ? 464711.0
           :x==6 ? 464727.0
           :x==7 ? 476228.0
-          :x==8 ? 481111.0
-          :       481095.0;
+          :/*x==8 ?*/ 481111.0/*
+          :       481095.0*/;
 #ifndef DEBUG_DISABLE_TEXT
     else
     if (x < 78)
@@ -177,13 +177,13 @@ vec2 rotateXY( vec2 p, float angleRadians )
     return m * p; // vec2
 }
 
-// De facto "noise"
-float noise( vec2 location ) {
-    return 
-        fract(
-            sin(
-                dot(location.xy, vec2(12.9898, 78.233))
-            ) * 43758.5453
+// De facto "noise" changed into two values
+vec2 noise2( vec2 location, vec2 delta ) {
+    const vec2 c = vec2(12.9898, 78.233);
+    const float m = 43758.5453;
+    return vec2(
+        fract(sin(dot(location +      delta            , c)) * m),
+        fract(sin(dot(location + vec2(delta.y, delta.x), c)) * m)
         );
 }
 
@@ -762,14 +762,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     
                     // noise
                     vec2 q = t * vec2(float(i), float(j)); // this could partially be optimized outside the loop
-                    // TODO ---- SINCE NOISE IS JUST TO GET two values that change in time and (x,y) per frame,
-                    //           I think the NOISE function should do all of the hard work, and then maybe
-                    //           it affords some optimizations... after all, it's two calls in a row, so
-                    //           lots are the same!
-                    float n1 = noise( uv + vec2(q.x, -q.y));
-                    float n2 = noise( uv + vec2(q.y, -q.x));
-                    
-                    vec2 offset = vec2(n1, n2) - vec2(0.5, 0.5);
+                    vec2 n = noise2( uv , q );
+                    vec2 offset = vec2(n.x, n.y) - vec2(0.5, 0.5);
                     color += pixelSet(uv + offset);
                 }
             }
