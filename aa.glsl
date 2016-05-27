@@ -1,5 +1,5 @@
-// Anti-Aliasing Tests - rev. 27
-// May 21 - 26, 2016
+// Anti-Aliasing Tests - rev. 28
+// May 21-26, 2016
 //
 // Authors: 
 //   Jason Doucette:    https://www.shadertoy.com/user/JasonD        
@@ -27,8 +27,13 @@
 #define CIRCLE_PERCENTAGE_OF_SCREEN 0.95
 #define MIN_ZOOM 1.0
 #define MAX_ZOOM 8.0
-#define COLOR_TITLE vec3( 0.0, 0.3, 1.0 ) // text
-#define BG_COLOR vec3( 1.0, 0.8, 0.6 )
+#define COLOR_TITLE      vec3( 0.0, 0.3, 1.0 ) // text
+#define BG_COLOR         vec3( 1.0, 0.8, 0.6 )
+#define COLOR_ZOOM       vec3( 0.0, 0.7, 0.0 )
+#define COLOR_EQUALS     vec3( 0.0, 0.0, 0.0 )
+#define COLOR_ZOOMFACTOR vec3( 1.0, 0.0, 0.0 )
+
+
 #define GAMMA_CORRECTION 2.2  
 	// check to see if your gamma is 2.2 here: http://epaperpress.com/monitorcal/gamma.html
 	// TODO -- should make gamma correction tester for monitor, so people can calibrate.
@@ -503,7 +508,7 @@ vec3 aa_random( vec2 uv )
 }
 */
 
-// ---- TEXT --------------------------------
+// ---- HUD TITLE & ZOOM --------------------------------
 
 vec3 drawTitle( in vec2 fragCoord, 
                // TODO --- these are equidistant, so why not pass in START and DELTA_X?
@@ -550,6 +555,22 @@ vec3 drawTitle( in vec2 fragCoord,
     return color;
 }
 
+vec3 drawZoom ( vec2 fragCoord, vec3 color ) 
+{
+    #ifndef DEBUG_DISABLE_TEXT
+    // "ZOOM=" text
+    gvPrintCharXY = vec2( 1.0, iResolution.y - gvFontSize.y - 1. );
+    
+    //color = drawStatus( color, fragCoord, nameLit, equalsLit );
+    color = Char( color, COLOR_ZOOM  , fragCoord, 90.0 ); // Z
+    color = Char( color, COLOR_EQUALS, fragCoord, 61.0 ); // =
+
+    // show Zoom factor bottom left
+    color = Char( color, COLOR_ZOOMFACTOR, fragCoord, ZOOM );    
+    #endif
+
+    return color;
+}
 
 // ---- MAIN --------------------------------
 void mainImage( out vec4 fragColor, in vec2 fragCoord )
@@ -614,36 +635,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     {
         // the AA method names:
         color = drawTitle( fragCoord, mx0, mx1, mx2, mx3, mx4 );
+        color = drawZoom ( fragCoord, color );
     }
     
     // ----------------------------------------------------------------
-	// 2. Footer
-    else
-    if ((fragCoord.y <= (gvFontSize.y + 2.0)
-    &&  (fragCoord.x < ((gvFontSize.x + 1.) * 3.))))
-    {
-        // background bar
-        color = BG_COLOR;
-
-        // colors    
-        #define nameLit   vec3( 0.0, 0.75, 0.0 )
-        #define equalsLit vec3( 0.0, 0.0, 0.0 )
-        #define factorLit vec3( 1.0, 0.0, 0.0 )
-
-#ifndef DEBUG_DISABLE_TEXT
-        // "ZOOM=" text
-        gvPrintCharXY = vec2( 1.0, 1.0 );
-        //color = drawStatus( color, fragCoord, nameLit, equalsLit );
-        color = Char( color, nameLit  , fragCoord, 90.0 ); // Z
-        color = Char( color, equalsLit, fragCoord, 61.0 ); // =
-
-        // show Zoom factor bottom left
-        color = Char( color, factorLit, fragCoord, ZOOM );    
-#endif
-    }
-    
-    // ----------------------------------------------------------------
-	// 3. Main Image (between the header/footer)
+	// 2. Main Image (between the header/footer)
     else
     {
         // ---- QUANTIZE TO ZOOM ----
