@@ -1,5 +1,5 @@
-// Anti-Aliasing Tests - rev. 33
-// May 21-26, 2016
+// Anti-Aliasing Tests - rev. 34
+// May 21-28, 2016
 //
 // Authors: 
 //   Jason Doucette:    https://www.shadertoy.com/user/JasonD        
@@ -237,6 +237,8 @@ X----X-+-X----+
 
     // TODO -- could prefix these with "g" or "g_"
 
+    #define PI 3.1415926535897932384626
+    
     // quantized zoom:
     float ZOOM;
 
@@ -399,8 +401,6 @@ vec3 pattern1( vec2 uv )
         ((g <  0.6    ) && (g >  0.4    )) ||
         ((g < (0.2+dt)) && (g > (0.1+dt)));
     
-    const float PI = 3.1415926535897932384626;
-    
     // TODO -- can't we replace atan() with some clever dot(),
     //         after all it should return -1..+1, and we could use that as an angle.
     bool insideSpokes = mod(atan(p.y, p.x) + quarterTime/10., PI/8.) < 0.15;
@@ -418,26 +418,56 @@ vec3 pattern2(vec2 uv)
     // correct for aspect ratio    
     float aspect = iResolution.y/iResolution.x;
     
-    // rotate with time distortion in Y
+    // rotate with time distortion in Y    
     float angle = -iGlobalTime * 0.05;
     
-    // translate
-    uv.xy -= vec2(0.5, 0.5);
-    uv.y *= aspect;
+    // TODO -- I suspect this could be massively optimized.
+    //         We are translating, rotating, scaling, translating
+    //         Twice.  Grabbing coordinates within each.
 
+    // 1. normal checkerboard
+    
+    // translate
+    vec2 p;
+    p.xy = uv.xy - vec2(0.5, 0.5);
+    p.y *= aspect;
     // rotate
-    vec2 p = rotateXY( uv, angle );
+   	p = rotateXY( p, angle );
     // translate back
     p += vec2(0.5, 0.5);
     
     const float NUM_CELLS = 4.0;
-    float checkerboard = (
+	float checkerboard1 = (
         (fract(p.x*NUM_CELLS) > 0.5) ^^ 
         (fract(p.y*NUM_CELLS) > 0.5)
             ? 1.0
-            : 0.0);  
+            : 0.0);
+    
+    // 2. 45 degree rotated checkerboard, zoomed to match vertices
+    
+    // translate
+    vec2 p2;
+    p2.xy = uv.xy-vec2(0.5, 0.5);
+    p2.y *= aspect;
+    // rotate
+   	p2 = rotateXY( p2, angle + PI / 4.0);
+    // expand
+    p2 *= 1.41421356237;
+    // translate back
+    p2 += vec2(0.5, 0.5);
+    
+    const float NUM_CELLS2 = 4.0;
+	float checkerboard2 = (
+        (fract(p2.x*NUM_CELLS2) > 0.5) ^^ 
+        (fract(p2.y*NUM_CELLS2) > 0.5)
+            ? 1.0
+            : 0.0);
 
-    return vec3(checkerboard);
+    // check:
+    //return vec3(checkerboard1, checkerboard2, 0.0);
+    return vec3(
+        mod(checkerboard1 + checkerboard2, 2.0)
+    );
 }
 
 // patternSet_3Dchecker
@@ -477,7 +507,7 @@ vec3 pixelSet(vec2 uv)
     vec2 p = uv.xy / res.xy; 
     
     // get slow time:
-    float tDistort = iGlobalTime * 0.8 + 
+    float tDistort = iGlobalTime * 1.5 + 
         dot( 
             origP, 
             vec2(0.5, 0.5) // NOTE: changing X vs. Y will change the angle of the swipe fade
@@ -492,7 +522,7 @@ vec3 pixelSet(vec2 uv)
     // we should double / triple (or more) up frames for static patterns,
     // so the fades take a short amount of time.    
     
-    const float REPEAT_PER_PATTERN = 4.0; // number of frames of just a single pattern (between fades)
+    const float REPEAT_PER_PATTERN = 6.0; // number of frames of just a single pattern (between fades)
     const float NUM_FRAMES_PER_PATTERN = REPEAT_PER_PATTERN + 1.0; // + 1.0 for the fade
     
     const float NUM_PATTERNS = 3.0;
