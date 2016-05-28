@@ -1,4 +1,4 @@
-// Anti-Aliasing Tests - rev. 34
+// Anti-Aliasing Tests - rev. 35J
 // May 21-28, 2016
 //
 // Authors: 
@@ -432,12 +432,12 @@ vec3 pattern2(vec2 uv)
     p.xy = uv.xy - vec2(0.5, 0.5);
     p.y *= aspect;
     // rotate
-   	p = rotateXY( p, angle );
+       p = rotateXY( p, angle );
     // translate back
     p += vec2(0.5, 0.5);
     
     const float NUM_CELLS = 4.0;
-	float checkerboard1 = (
+    float checkerboard1 = (
         (fract(p.x*NUM_CELLS) > 0.5) ^^ 
         (fract(p.y*NUM_CELLS) > 0.5)
             ? 1.0
@@ -450,14 +450,14 @@ vec3 pattern2(vec2 uv)
     p2.xy = uv.xy-vec2(0.5, 0.5);
     p2.y *= aspect;
     // rotate
-   	p2 = rotateXY( p2, angle + PI / 4.0);
+       p2 = rotateXY( p2, angle + PI / 4.0);
     // expand
     p2 *= 1.41421356237;
     // translate back
     p2 += vec2(0.5, 0.5);
     
     const float NUM_CELLS2 = 4.0;
-	float checkerboard2 = (
+    float checkerboard2 = (
         (fract(p2.x*NUM_CELLS2) > 0.5) ^^ 
         (fract(p2.y*NUM_CELLS2) > 0.5)
             ? 1.0
