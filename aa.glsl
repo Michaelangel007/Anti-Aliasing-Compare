@@ -1,4 +1,4 @@
-// Anti-Aliasing Tests - rev. 37J
+// Anti-Aliasing Tests - rev. 38J
 // May 21-28, 2016
 //
 // Authors: 
@@ -210,6 +210,7 @@ X----X-+-X----+
 
 7A. make a higher sample rate for 3Dfx's method, say a 4x4 grid.
 7B. compare identical sample numbers, say 4x4 square vs. 4x4 random.
+7C. define DISABLE_RND_TEMPORAL_COHERENCE to see random NxN with static sample locations.
 
 */
 
@@ -609,14 +610,14 @@ vec3 drawTitle( in vec2 fragCoord,
 
 vec3 drawZoom ( vec2 fragCoord, vec3 color ) 
 {
-    // "ZOOM=" text
+    // "Z=x" text, where x = the zoom factor
     gvPrintCharXY = vec2( 1.0, iResolution.y - gvFontSize.y - 1. );
     
     //color = drawStatus( color, fragCoord, nameLit, equalsLit );
     color = Char( color, COLOR_ZOOM  , fragCoord, 90.0 ); // Z
     color = Char( color, COLOR_EQUALS, fragCoord, 61.0 ); // =
 
-    // show Zoom factor bottom left
+    // show Zoom factor in upper-left
     color = Char( color, COLOR_ZOOMFACTOR, fragCoord, ZOOM );    
     return color;
 }
@@ -810,11 +811,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         
         else
         {
-            #ifdef DISABLE_RND_TEMPORAL_COHERENCE
+#ifdef DISABLE_RND_TEMPORAL_COHERENCE
             float t = 1.0;
-            #else
+#else
             float t = iGlobalTime;
-            #endif                    
+#endif                    
             
             for (int i=0; i<N_RAND; i++) {
                 for (int j=0; j<N_RAND; j++) {
