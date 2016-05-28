@@ -1,25 +1,41 @@
-// Anti-Aliasing Tests - rev. 38J
-// May 21-28, 2016
-//
-// Authors: 
-//   Jason Doucette:    https://www.shadertoy.com/user/JasonD        
-//                      http://xona.com/jason/
-//   Michael Pohoreski: https://www.shadertoy.com/user/MichaelPohoreski
+/* Anti-Aliasing Tests - rev. 39J
+   May 21-28, 2016
 
-// Methods:                     # Samples:
-// ----------------------------------------------
-// 1. none                      1
-// 2. nVidia Quincunx           2
-// 3. standard 2x2 supersample  4
-// 4. 3Dfx rotated grid         4
-// 5. standard NxN supersample  4^2 (N^2 set in #define N_NXN  below)
-// 6. random supersample        8^2 (N^2 set in #define N_RAND below)
-#define N_NXN  4 // See Note 5 above.
-#define N_RAND 8 // See Note 6 above.
+   Authors: 
+     Jason Doucette:    https://www.shadertoy.com/user/JasonD        
+                        http://xona.com/jason/
+     Michael Pohoreski: https://www.shadertoy.com/user/MichaelPohoreski
+
+  Methods:                     # Samples:
+  ----------------------------------------------
+  1. none                      1
+  2. nVidia Quincunx           2
+  3. standard 2x2 supersample  4
+  4. 3Dfx rotated grid         4
+  5. standard NxN supersample  4^2 (*N^2 set in #define METHOD_NXN_N     below)
+  6. random supersample        8^2 (*N^2 set in #define METHOD_RND_NXN_N below)
+*/
+
+
+// ---- MAIN SETTINGS --------------------------------
+
+#define METHOD_NXN_N  4     // *See Note 5 above.
+#define METHOD_RND_NXN_N 8  // *See Note 6 above.
 //  4x 4 =   16 samples
 //  8x 8 =   64 samples
 // 16x16 =  256 samples
 // 32x32 = 1024 samples
+
+//#define DISABLE_RND_TEMPORAL_COHERENCE 
+// Should remain commented out for best results:
+// The main idea is to pick random sample points on EACH FRAME.
+// Disabling this leaves the sampled points random, but they remain static from FRAME TO FRAME.
+
+#define GAMMA_CORRECTION 2.2
+    // check gamma:  https://www.shadertoy.com/view/ldVSD1
+
+// NOTE: Scroll down for more settings that are possible.
+
 
 // ---- METHOD EXPLANATIONS --------------------------------
 /*
@@ -214,7 +230,8 @@ X----X-+-X----+
 
 */
 
-// ---- SETTINGS --------------------------------
+
+// ---- MINOR SETTINGS --------------------------------
 
 #define CIRCLE_PERCENTAGE_OF_SCREEN 0.90
 #define MIN_ZOOM 1.0
@@ -224,13 +241,7 @@ X----X-+-X----+
 #define COLOR_ZOOM       vec3( 0.0, 0.7, 0.0 )
 #define COLOR_EQUALS     vec3( 0.0, 0.0, 0.0 )
 #define COLOR_ZOOMFACTOR vec3( 1.0, 0.0, 0.0 )
-#define GAMMA_CORRECTION 2.2
-    // check gamma:
-    // https://www.shadertoy.com/view/ldVSD1
 
-//#define DISABLE_RND_TEMPORAL_COHERENCE // Should remain commented out for best results
-// The main idea is to pick random sample points on EACH FRAME.
-// Disabling this leaves the sampled points random, but they remain static from FRAME TO FRAME.
 
 // ---- GLOBALS --------------------------------
 
@@ -787,11 +798,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         
         else if (origP.x < mx4) {
 
-            #define invNxN (1. / float(N_NXN))
+            #define invNxN (1. / float(METHOD_NXN_N))
 
-            for (int i=0; i<N_NXN; i++) {
+            for (int i=0; i<METHOD_NXN_N; i++) {
                 float n1 = float(i) * invNxN;
-                for (int j=0; j<N_NXN; j++) {
+                for (int j=0; j<METHOD_NXN_N; j++) {
                     
                     // TODO: could be optimized with additions of a single constant delta 
                     //       applied to both x and y.
@@ -804,7 +815,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     color += pixelSet(uv + offset);
                 }
             }
-            color /= float(N_NXN * N_NXN);
+            color /= float(METHOD_NXN_N * METHOD_NXN_N);
         }
 
         // ---- METHOD 6. RANDOM NxN ----
@@ -817,8 +828,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             float t = iGlobalTime;
 #endif                    
             
-            for (int i=0; i<N_RAND; i++) {
-                for (int j=0; j<N_RAND; j++) {
+            for (int i=0; i<METHOD_RND_NXN_N; i++) {
+                for (int j=0; j<METHOD_RND_NXN_N; j++) {
                     
                     // noise
                     vec2 q = t * vec2(float(i), float(j)); // this could partially be optimized outside the loop
@@ -827,7 +838,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     color += pixelSet(uv + offset);
                 }
             }
-            color /= float(N_RAND * N_RAND);           
+            color /= float(METHOD_RND_NXN_N * METHOD_RND_NXN_N);           
         }        
     }
     
