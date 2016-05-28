@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 40J
+/* Anti-Aliasing Tests - rev. 41J
    May 21-28, 2016
 
    Authors: 
@@ -104,7 +104,7 @@ equi-distance from each other,
 and from samples from adjacent pixels
 
 ^^^ SOUND FAMILIAR? ^^^
-    Yup, it's very much like 2x2, 
+    Yup, it's very much like 2x2,
 
     EXCEPT....
 
@@ -254,7 +254,7 @@ X----X-+-X----+
     vec2 origM; // 0..1
     vec2 origP; // 0..1
 
-    // MODIFIED based on zoom, used in many functions:
+    // MODIFIED based on quantized zoom, used in many functions:
     vec2  res; // resolution
     vec2  mou; // mouse coordinates
 
@@ -339,15 +339,13 @@ vec3 Char(  vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue )
     // thus characters are spaced 9 pixels apart    
     // except for characters 3 pixels wide
     // TODO -- LOTS OF COMPARES... BAD?
-    float fAdvance = /* false
-        
+    float fAdvance = /* false        
         || (fValue == 42.) // *
         || (fValue == 73.) // I
         || (fValue == 84.) // T
         || (fValue == 86.) // V
         || (fValue == 89.) // Y
         || (fValue == 90.) // Z        
-
         ? 0.0 // glyph width has no padding
         : */ 1.0; 
     gvPrintCharXY.x += gvFontSize.x + fAdvance;
@@ -374,7 +372,7 @@ vec2 rotateXY( vec2 p, float angleRadians )
     return m * p; // vec2
 }
 
-// De facto "noise" changed into two values
+// De facto "noise" function, modified to supply two values
 vec2 noise2( vec2 location, vec2 delta ) {
     const vec2 c = vec2(12.9898, 78.233);
     const float m = 43758.5453;
@@ -405,8 +403,9 @@ vec3 pattern1( vec2 uv )
         ((g <  0.6    ) && (g >  0.4    )) ||
         ((g < (0.2+dt)) && (g > (0.1+dt)));
     
-    // TODO -- can't we replace atan() with some clever dot(),
-    //         after all it should return -1..+1, and we could use that as an angle.
+    // TODO -- can't we replace atan() with some clever dot()?
+    //         after all it should return -1..+1, 
+    //         and we could use that as an angle.
     bool insideSpokes = mod(atan(p.y, p.x) + quarterTime/10., PI/8.) < 0.15;
     
     float v = mod(float(insideCircle) *  1.0 + 
@@ -432,18 +431,18 @@ vec3 pattern2(vec2 uv)
     // 1. normal checkerboard
     
     // translate
-    vec2 p;
-    p.xy = uv.xy - vec2(0.5, 0.5);
-    p.y *= aspect;
+    vec2 p1;
+    p1.xy = uv.xy - vec2(0.5, 0.5);
+    p1.y *= aspect;
     // rotate
-       p = rotateXY( p, angle );
+       p1 = rotateXY( p1, angle );
     // translate back
-    p += vec2(0.5, 0.5);
+    p1 += vec2(0.5, 0.5);
     
     const float NUM_CELLS = 4.0;
     float checkerboard1 = (
-        (fract(p.x*NUM_CELLS) > 0.5) ^^ 
-        (fract(p.y*NUM_CELLS) > 0.5)
+        (fract(p1.x * NUM_CELLS) > 0.5) ^^ 
+        (fract(p1.y * NUM_CELLS) > 0.5)
             ? 1.0
             : 0.0);
     
@@ -462,8 +461,8 @@ vec3 pattern2(vec2 uv)
     
     const float NUM_CELLS2 = 4.0;
     float checkerboard2 = (
-        (fract(p2.x*NUM_CELLS2) > 0.5) ^^ 
-        (fract(p2.y*NUM_CELLS2) > 0.5)
+        (fract(p2.x * NUM_CELLS2) > 0.5) ^^ 
+        (fract(p2.y * NUM_CELLS2) > 0.5)
             ? 1.0
             : 0.0);
 
@@ -492,7 +491,8 @@ vec3 pattern3(vec2 uv)
          * cam.z;
 
     // rotate
-    float angle = iGlobalTime * 0.05;
+    float angle = (iGlobalTime * 0.05) 
+        * float(uv.y < 0.5); // only allow the ground to rotate, not the ceiling
     cam.xy = rotateXY( cam.xy, angle );
 
     // textured
@@ -822,11 +822,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             color /= float(METHOD_NXN_N * METHOD_NXN_N);
         }
 
-        // ---- METHOD 6. RANDOM NxN ----
+        // ---- METHOD 6. RANDOM NxN STATIC ----
+        // ---- METHOD 7. RANDOM NxN DYNAMIC ----
         
         else
         {
-            float t = (origP.x < mx4 ? iGlobalTime : 1.0);
+            float t = (origP.x > mx5 ? iGlobalTime : 1.0);
             for (int i=0; i<METHOD_RND_NXN_N; i++) {
                 for (int j=0; j<METHOD_RND_NXN_N; j++) {
                     
