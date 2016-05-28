@@ -1,4 +1,4 @@
-// Anti-Aliasing Tests - rev. 35J
+// Anti-Aliasing Tests - rev. 36J
 // May 21-28, 2016
 //
 // Authors: 
@@ -279,7 +279,7 @@ float DigitBin(const in int x)
     if (x < 78)
         return // Glyphs added by Michael Pohoreski
            x==42 ?  21072.0 // *
-          //:x==45 ?   3840.0 // -
+          :x==45 ?   3840.0 // -
           :x==61 ?  61680.0 // =
           //:x==65 ? 434073.0 // A
           //:x==66 ? 497559.0 // B
@@ -586,9 +586,8 @@ vec3 drawTitle( in vec2 fragCoord,
 #ifndef DEBUG_DISABLE_TEXT
     gvPrintCharXY.y = iResolution.y - gvFontSize.y - 1.;
     
-    // no sense in showing anything for "none"
-    //gvPrintCharXY.x = mx0*scale - center;
-    //color = Char( color, COLOR_TITLE, fragCoord, 45. ); // -
+    gvPrintCharXY.x = mx0*scale - center;
+    color = Char( color, COLOR_TITLE, fragCoord, 45. ); // -
 
     gvPrintCharXY.x = mx1*scale - center;
     color = Char( color, COLOR_TITLE, fragCoord, 81. ); // Q
