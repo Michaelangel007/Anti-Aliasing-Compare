@@ -1,4 +1,4 @@
-// Anti-Aliasing Tests - rev. 36J
+// Anti-Aliasing Tests - rev. 37J
 // May 21-28, 2016
 //
 // Authors: 
@@ -227,11 +227,9 @@ X----X-+-X----+
     // check gamma:
     // https://www.shadertoy.com/view/ldVSD1
 
-//#define DEBUG_DISABLE_BLACK_BAR_SPLITS
-//#define DEBUG_DISABLE_TEXT
-//#define DISABLE_RND_TEMPORAL_COHERENCE // this should remain enabled
-
-
+//#define DISABLE_RND_TEMPORAL_COHERENCE // Should remain commented out for best results
+// The main idea is to pick random sample points on EACH FRAME.
+// Disabling this leaves the sampled points random, but they remain static from FRAME TO FRAME.
 
 // ---- GLOBALS --------------------------------
 
@@ -274,7 +272,6 @@ float DigitBin(const in int x)
           :x==7 ? 476228.0
           :/*x==8 ?*/ 481111.0/*
           :       481095.0*/;
-#ifndef DEBUG_DISABLE_TEXT
     else
     if (x < 78)
         return // Glyphs added by Michael Pohoreski
@@ -311,7 +308,6 @@ float DigitBin(const in int x)
           //:x==88 ? 628377.0 // X
           //:x==89 ? 348706.0 // Y
           :        475671.0;// Z
-#endif
     return 0.0;
 }
 
@@ -320,7 +316,6 @@ float DigitBin(const in int x)
 
 // ---- TEXT --------------------------------
 
-#ifndef DEBUG_DISABLE_TEXT
 vec2 gvPrintCharXY = vec2( 0.0, 0.0 );
 vec3 Char(  vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue )
 {
@@ -356,7 +351,6 @@ vec3 Char(  vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue )
     );
     return mix( backgroundColor, textColor, a );
 }
-#endif
 
 
 // ---- UTILITY --------------------------------
@@ -583,7 +577,6 @@ vec3 drawTitle( in vec2 fragCoord,
     float scale  = iResolution.x;
     float center = (mx1 - mx0) * 0.5 * scale;
 
-#ifndef DEBUG_DISABLE_TEXT
     gvPrintCharXY.y = iResolution.y - gvFontSize.y - 1.;
     
     gvPrintCharXY.x = mx0*scale - center;
@@ -611,14 +604,11 @@ vec3 drawTitle( in vec2 fragCoord,
     color = Char( color, COLOR_TITLE, fragCoord, 82. ); // R
     color = Char( color, COLOR_TITLE, fragCoord, 68. ); // D
 
-#endif // DEBUG_DISABLE_TEXT
-
     return color;
 }
 
 vec3 drawZoom ( vec2 fragCoord, vec3 color ) 
 {
-    #ifndef DEBUG_DISABLE_TEXT
     // "ZOOM=" text
     gvPrintCharXY = vec2( 1.0, iResolution.y - gvFontSize.y - 1. );
     
@@ -628,8 +618,6 @@ vec3 drawZoom ( vec2 fragCoord, vec3 color )
 
     // show Zoom factor bottom left
     color = Char( color, COLOR_ZOOMFACTOR, fragCoord, ZOOM );    
-    #endif
-
     return color;
 }
 
@@ -858,8 +846,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
     // ---- SHOW BLACK BAR SPLITS BETWEEN AA METHODS ----
 
-#ifndef DEBUG_DISABLE_BLACK_BAR_SPLITS
-
     // float fade = 1.0; // TODO: Need to account for mouse y position: m.y;
     #define X1 0.002
     #define X2 0.003
@@ -868,7 +854,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     color.g += 1. - smoothstep( X1, X2, abs(origP.x-mx2) );
     color *=        smoothstep( X1, X2, abs(origP.x-mx3) );
     color *=        smoothstep( X1, X2, abs(origP.x-mx4) );
-#endif
 
     
     // ---- FINAL RESULT ----
