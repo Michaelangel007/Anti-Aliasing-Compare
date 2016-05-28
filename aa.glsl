@@ -1,4 +1,4 @@
-// Anti-Aliasing Tests - rev. 32
+// Anti-Aliasing Tests - rev. 33
 // May 21-26, 2016
 //
 // Authors: 
@@ -429,14 +429,13 @@ vec3 pattern2(vec2 uv)
     // translate back
     p += vec2(0.5, 0.5);
     
-    const float NUM_CELLS = 8.0;
-
-    // checkerboard
-    float checkerboard = (
-        mod(floor(p.x*NUM_CELLS),2.0) == 
-        mod(floor(p.y*NUM_CELLS),2.0) 
+    const float NUM_CELLS = 4.0;
+	float checkerboard = (
+        (fract(p.x*NUM_CELLS) > 0.5) ^^ 
+        (fract(p.y*NUM_CELLS) > 0.5)
             ? 1.0
             : 0.0);  
+
     return vec3(checkerboard);
 }
 
