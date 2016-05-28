@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 39J
+/* Anti-Aliasing Tests - rev. 40J
    May 21-28, 2016
 
    Authors: 
@@ -6,14 +6,15 @@
                         http://xona.com/jason/
      Michael Pohoreski: https://www.shadertoy.com/user/MichaelPohoreski
 
-  Methods:                     # Samples:
+  Methods:                       # Samples:
   ----------------------------------------------
-  1. none                      1
-  2. nVidia Quincunx           2
-  3. standard 2x2 supersample  4
-  4. 3Dfx rotated grid         4
-  5. standard NxN supersample  4^2 (*N^2 set in #define METHOD_NXN_N     below)
-  6. random supersample        8^2 (*N^2 set in #define METHOD_RND_NXN_N below)
+  1. none                        1
+  2. nVidia Quincunx             2
+  3. standard 2x2 supersample    4
+  4. 3Dfx rotated grid           4
+  5. standard NxN supersample    4^2 (*N^2 set in #define METHOD_NXN_N     below)
+  6. random supersample static   8^2 (*N^2 set in #define METHOD_RND_NXN_N below)
+  7. random supersample dynamic  8^2 (*N^2 set in #define METHOD_RND_NXN_N below)
 */
 
 
@@ -25,11 +26,6 @@
 //  8x 8 =   64 samples
 // 16x16 =  256 samples
 // 32x32 = 1024 samples
-
-//#define DISABLE_RND_TEMPORAL_COHERENCE 
-// Should remain commented out for best results:
-// The main idea is to pick random sample points on EACH FRAME.
-// Disabling this leaves the sampled points random, but they remain static from FRAME TO FRAME.
 
 #define GAMMA_CORRECTION 2.2
     // check gamma:  https://www.shadertoy.com/view/ldVSD1
@@ -205,11 +201,12 @@ For N = 4:
 +------+------+
 
 
-======== 6. random supersample       
+======== 6. & 7. random supersample       
 
 Same as NxX, except it's random.
-This should CHANGE EVERY FRAME, to produce random photons reaching your eye.
-This should run at the HIGHEST FRAME-RATE for best results:
+6. This could be static, which avoids moire patterns.
+7. However, this should CHANGE EVERY FRAME, to produce random photons reaching your eye.
+   Thus, this should run at the HIGHEST FRAME-RATE for best results:
 
 +-X----+---X--+
 X    X | X    |        
@@ -222,7 +219,8 @@ X  X   |    X |
 X----X-+-X----+
 
 
-======== 7. ADDITIONAL METHODS: EXERCISE FOR THE READER:
+
+======== 8. ADDITIONAL METHODS: EXERCISE FOR THE READER:
 
 7A. make a higher sample rate for 3Dfx's method, say a 4x4 grid.
 7B. compare identical sample numbers, say 4x4 square vs. 4x4 random.
@@ -582,7 +580,8 @@ vec3 drawTitle( in vec2 fragCoord,
                float mx1, 
                float mx2, 
                float mx3, 
-               float mx4)
+               float mx4,
+               float mx5)
 {
     vec3 color = BG_COLOR;
     
@@ -610,11 +609,15 @@ vec3 drawTitle( in vec2 fragCoord,
     color = Char( color, COLOR_TITLE, fragCoord, 78. ); // N
     color = Char( color, COLOR_TITLE, fragCoord, 42. ); // *
 
-    gvPrintCharXY.x = mx4*scale + center;
+    gvPrintCharXY.x = mx5*scale - center;
+    color = Char( color, COLOR_TITLE, fragCoord, 82. ); // R
+    color = Char( color, COLOR_TITLE, fragCoord, 1.  ); // 1
+
+    gvPrintCharXY.x = mx5*scale + center;
     //                          ^-- positive, to show on the other side of the line
 
     color = Char( color, COLOR_TITLE, fragCoord, 82. ); // R
-    color = Char( color, COLOR_TITLE, fragCoord, 68. ); // D
+    color = Char( color, COLOR_TITLE, fragCoord, 2.  ); // 2
 
     return color;
 }
@@ -686,6 +689,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float mx2 = origM.x       ;
     float mx3 = origM.x + 0.20;
     float mx4 = origM.x + 0.40;
+    float mx5 = origM.x + 0.60;
         
     vec3 color = vec3( 0.0 );
 
@@ -695,7 +699,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     if (fragCoord.y > (iResolution.y - gvFontSize.y - 2.0))
     {
         // the AA method names:
-        color = drawTitle( fragCoord, mx0, mx1, mx2, mx3, mx4 );
+        color = drawTitle( fragCoord, mx0, mx1, mx2, mx3, mx4, mx5 );
         color = drawZoom ( fragCoord, color );
     }
     
@@ -822,12 +826,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         
         else
         {
-#ifdef DISABLE_RND_TEMPORAL_COHERENCE
-            float t = 1.0;
-#else
-            float t = iGlobalTime;
-#endif                    
-            
+            float t = (origP.x < mx4 ? iGlobalTime : 1.0);
             for (int i=0; i<METHOD_RND_NXN_N; i++) {
                 for (int j=0; j<METHOD_RND_NXN_N; j++) {
                     
@@ -866,6 +865,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     color.g += 1. - smoothstep( X1, X2, abs(origP.x-mx2) );
     color *=        smoothstep( X1, X2, abs(origP.x-mx3) );
     color *=        smoothstep( X1, X2, abs(origP.x-mx4) );
+    color *=        smoothstep( X1, X2, abs(origP.x-mx5) );
 
     
     // ---- FINAL RESULT ----
