@@ -1,11 +1,11 @@
-// Anti-Aliasing Tests - rev. 31
+// Anti-Aliasing Tests - rev. 32
 // May 21-26, 2016
 //
 // Authors: 
 //   Jason Doucette:    https://www.shadertoy.com/user/JasonD        
 //                      http://xona.com/jason/
 //   Michael Pohoreski: https://www.shadertoy.com/user/MichaelPohoreski
-//
+
 // Methods:                     # Samples:
 // ----------------------------------------------
 // 1. none                      1
@@ -21,6 +21,197 @@
 // 16x16 =  256 samples
 // 32x32 = 1024 samples
 
+// ---- METHOD EXPLANATIONS --------------------------------
+/*
+
+======== 1. none   
+
+A single sample is used from the pixel's center:
+
++------+------+
+|             |        
+|             |
+|             |
++      X      +  <--- X marks the spot
+|             |
+|             |
+|             |        
++------+------+
+
+
+======== 2. nVidia Quincunx    
+
+5 samples are used:
+- 1 in the center
+- 4 at the corners of the pixel, which are shared with 3 other pixels (4 in total).
+The result is that only 2 samples per pixel need to be taken
+
+X------+------X  <--- note the samples from ALL FOUR corners
+|             |        
+|             |
+|             |
++      X      +
+|             |
+|             |
+|             |        
+X------+------X  <---- they are shared with adjacent pixels
+|             |        
+|             |
+|             |
++      X  <- -+- - - - weight = 1/2 = 50%
+|             |
+|             |
+|             |        
+X------+------X < - - - weight = 1/8 = 12.5%
+
+This is essentiall a blur.
+
+
+
+======== 3. standard 2x2 supersample 
+
+4 samples are taken within a pixel,
+equi-distance from each other,
+and from samples from adjacent pixels
+
++------+------+
+|      |      |        
+|  x       x  |
+|      |      |
++ - - - - - - +
+|      |      |
+|  x       x  |
+|      |      |        
++------+------+
+
+
+======== 4. 3Dfx rotated grid        
+
+4 samples are taken within a pixel.
+equi-distance from each other,
+and from samples from adjacent pixels
+
+^^^ SOUND FAMILIAR? ^^^
+    Yup, it's very much like 2x2, 
+
+    EXCEPT....
+
+The pixel grid is rotated:
+
++------+------+
+|    X-| - - -| - - - - }
+|             |         } dy = constant
+|      |    X | - -}- - }
++ - - - - - - +    } dy
+| X- - | - - -|- - }- }
+|             |       } dy
+|      | X - -| - - - }       
++------+------+
+  ^  ^   ^  ^
+  |  |   |  |
+  |  -----  |
+  |  |dx |  |
+  |  |   ----
+  ----     dx = constant
+
+     dx = dy
+
+3Dfx rotation angle is such that the four points are 
+EQUI-DISTANCE from each other IN BOTH ORTHOGONAL DIRECTIONS.
+
+Thus, when a near horizontal or near vertical plane moves 
+through the pixel, instead of seeing 2 steps (as in a 2x2 AA):
+(step 1 = passing through the top    (or right) two samples)
+(step 2 = passing through the bottom (or left)  two samples)
+
+You will see 4 steps:
+(step 1 = passing through the first sample)
+(step 2 = passing through the second sample)
+(step 3 = passing through the third sample)
+(step 4 = passing through the fourth sample)
+
+This is maximum possible steps!  4 steps for 4 samples.
+
+
+MATHEMATICS FOR THE ANGLE:
+
+It's not so hard.
+Picture the bottom & right dots, and make a right triangle:
+
+    X
+   /|
+  / o
+ /  |
+ X--o
+
+The angle is within a triangle of:
+- oppsite side = exactly 2x length of adjacent.
+
+ tan( angle ) =    opp / adj
+ tan( angle ) =      1 / 2
+      angle   = atan(1 / 2)
+              = 26.5650512 degrees 
+              = 0.46364760 radians
+
+
+HARD CODE THE RESULT FOR SPEED:
+
+Rotate a point (0.25, 0.25), from the 2x2,
+by 26.5650512 degrees:
+    
+    vec2 p = rotateX( 
+        vec2(0.25, 0.25),  
+        0.463647609 );  // radians (26.5650512 degrees)
+
+Result = (x,y) = 0.11218413712, 0.33528304367
+               =     small    ,     large
+
+The 4 resultant dots (rotated 26.5 degrees clockwise) are:
+ 1. -small, +large
+ 2. +large, +small
+ 3. +small, -large
+ 4. -large, -small
+
+
+======== 5. standard NxN supersample 
+
+Subdivides the pixel by N in both directions.
+For N = 4:
+
++------+------+
+| X  X | X  X |        
+|             |
+| X  X | X  X |
++ - - - - - - +
+| X  X | X  X |        
+|             |
+| X  X | X  X |
++------+------+
+
+
+======== 6. random supersample       
+
+Same as NxX, except it's random.
+This should CHANGE EVERY FRAME, to produce random photons reaching your eye.
+This should run at the HIGHEST FRAME-RATE for best results:
+
++-X----+---X--+
+X    X | X    |        
+| X    X      X
+|   X  |   X  |
++ - - - -X- - +
+X  X   |    X |        
+|    X   X    |
+| X    |   X  X
+X----X-+-X----+
+
+
+======== 7. ADDITIONAL METHODS: EXERCISE FOR THE READER:
+
+7A. make a higher sample rate for 3Dfx's method, say a 4x4 grid.
+7B. compare identical sample numbers, say 4x4 square vs. 4x4 random.
+
+*/
 
 // ---- SETTINGS --------------------------------
 
@@ -347,161 +538,6 @@ vec3 pixelSet(vec2 uv)
     else                                                           return mix(                          pattern3(p), pattern1(p), f);
 }
 
-
-/*
-INLINED IN MAIN()... DO NOT DELETE THE COMMENTS... DELETE ONLY THE CODE.
-// ---- 2X2 AA --------------------------------
-vec3 aa_2x2( vec2 uv )
-{
-    // fragCoord = pixel, not normalized
-    vec2 d = vec2( 0.25, 0.25 );
-   
-    return vec3(
-        pixelSet(uv + vec2(+d.x, +d.y)) +
-        pixelSet(uv + vec2(-d.x, +d.y)) +
-        pixelSet(uv + vec2(+d.x, -d.y)) +
-        pixelSet(uv + vec2(-d.x, -d.y))
-    ) / 4.0; // average
-}
-
-
-// ---- 3DFX AA --------------------------------
-vec3 aa_3dfx( vec2 uv )
-{
-    // fragCoord = pixel, not normalized
-    //vec2 p = vec2( 0.25, 0.25 );
-
-    // rotate
-    
-    // 3Dfx rotation angle is such that the four points are equi-distant
-    // from each other in orthogonal directions.  Thus, when a near
-    // horizontal or near vertical plane moves through the pixel,
-    // instead of seeing 2 steps (as in a 2x2 AA), you will see 4 steps,
-    // which is the maximum when only sampling each pixel 4 times.
-    // This angle turns out to be the angle in a right triangle 
-    // such that oppsite = 2x length of adjacent.
-
-    // normal 2x2:
-
-    //   x   |   x --------- both are passed over at the (nearly) same time 
-    //       |               with a (near) horizontal line
-    // ------+------
-    //       |    
-    //   x   |   x 
-
-    // 3Dfx:
-    
-    //     x-|- - - - - - - -}
-    //       |               } dy = constant
-    //       |   x- - - -}- -}
-    // ------+------     } dy
-    //   x - | - - - - - }- - -}
-    //       |                 } dy
-    //       | x - - - - - - - }
-    
-    // the angle is:
-    //
-    //    x
-    //   /|
-    //  / x
-    // /  |
-    // x--x
-    //
-    // tan( angle ) =    opp / adj
-    // tan( angle ) =      1 / 2
-    //      angle   = atan(1 / 2)
-    //float rad = atan(0.5); // 26.5650512 degrees = 0.46364760900080611621425623146121 
-    
-    vec2 q = rotateX( vec2(0.25), 0.463647609 );
-    
-    // before: (x,y) = 0.25, 0.25
-    // after:  (x,y) = 0.11218413712, 0.33528304367
-    //               =     small    ,     large
-    //float small = q.x;
-    //float large = q.y;
-    
-    // 4 dots, rotated 26.5 degrees clockwise:
-    // 1. -small, +large
-    // 2. +large, +small
-    // 3. +small, -large
-    // 4. -large, -small
-    
-    return vec3(
-        pixelSet(uv + vec2(-q.x, +q.y)) +
-        pixelSet(uv + vec2(+q.y, +q.x)) +
-        pixelSet(uv + vec2(+q.x, -q.y)) +
-        pixelSet(uv + vec2(-q.y, -q.x))
-    ) / 4.0; // average
-}
-
-// ---- QUINCUNX AA --------------------------------
-vec3 aa_quincunx( vec2 uv )
-{
-    // fragCoord = pixel, not normalized
-    vec2 d = vec2( 0.5, 0.5 );
-   
-    // Weightings
-    // quincunx = 1/8th power for four corners that are shared with other pixels
-    //          = 1/2   power for one center
-    //          = TOTAL of 100%
-    return vec3(
-        pixelSet(uv + vec2(+d.x, +d.y)) * 0.125 +
-        pixelSet(uv + vec2(-d.x, +d.y)) * 0.125 +
-        pixelSet(uv + vec2(+d.x, -d.y)) * 0.125 +
-        pixelSet(uv + vec2(-d.x, -d.y)) * 0.125 +
-        pixelSet(uv + vec2(   0,    0)) * 0.500
-    );
-}
-
-// ---- NxN --------------------------------
-vec3 aa_nxn( vec2 uv )
-{
-    // fragCoord = pixel, not normalized
-    
-    vec3 c = vec3(0.0,0.0,0.0);
-    #define oon 1. / float(N_NXN)
-    for (int i=0; i<N_NXN; i++) {
-        for (int j=0; j<N_NXN; j++) {
-            
-            // TODO: could be optimized with additions of a single constant delta applied to both x and y.
-            
-            // perfect grid
-            float n1 = float(i) * oon; // this could be optimized outside the loop
-            float n2 = float(j) * oon;
-            
-            vec2 offset = vec2(n1, n2) - vec2(0.5, 0.5);
-            c += pixelSet(uv + offset);
-        }
-    }
-    return c / float(N_NXN * N_NXN);
-}
-
-// ---- RANDOM AA --------------------------------
-vec3 aa_random( vec2 uv )
-{
-    // fragCoord = pixel, not normalized
-    
-    float t = iGlobalTime;
-    
-    vec3 c = vec3(0);
-    for (int i=0; i<N_RAND; i++) {
-        for (int j=0; j<N_RAND; j++) {
-            
-            // noise
-            float t1 = t * float(i); // this could be optimized outside the loop
-            float t2 = t * float(j);
-            float n1 = noise( uv + vec2(t1, -t2));
-            float n2 = noise( uv + vec2(t2, -t1));
-            
-            vec2 offset = vec2(n1, n2) - vec2(0.5, 0.5);
-            c += pixelSet(uv + offset);
-        }
-    }
-   
-    return c / float(N_RAND * N_RAND);
-}
-*/
-
 // ---- HUD TITLE & ZOOM --------------------------------
 
 vec3 drawTitle( in vec2 fragCoord, 
@@ -670,11 +706,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             color = pixelSet   ( uv );
         }
         else
-            
-        // TODO ------ THIS PART NEEDS AN EXPLANATION OF EVERYTHING THAT'S HAPPENING.
-        //             TAKE THE EXPLANATION FROM 3DFX ABOVE, AND THEN ADD ANOTHER FOR QUINCUNX
-        //             AND 2X2, THEN A FINAL EXPLANATION OF OUR PIXEL SHADER'S OPTIMIZATION
-        //             **OF CODE SIZE** DESPITE DOING MORE WORK THAN THE ORIGINAL HARDWARE AA.
+          
+        // ===========================
+        // EXPLANATION
+        // ===========================
+        // Because pixel shaders don't like too many if-statements, we tried to reduce them.
+        // Since 2x2, Quincunx, and 3Dfx are so similar pixel-shader-wise, we combined them.
+        // Individually, this isn't optimal, but globally (for the pixel shader to use less
+        // "if-statement resources", it is.  THIS MEANS MORE PEOPLE CAN RUN THIS SHADER.
+        // ===========================
             
         if (origP.x < mx3) {
             
