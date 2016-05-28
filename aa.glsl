@@ -224,8 +224,8 @@ X----X-+-X----+
 #define COLOR_EQUALS     vec3( 0.0, 0.0, 0.0 )
 #define COLOR_ZOOMFACTOR vec3( 1.0, 0.0, 0.0 )
 #define GAMMA_CORRECTION 2.2
-	// check gamma:
-	// https://www.shadertoy.com/view/ldVSD1
+    // check gamma:
+    // https://www.shadertoy.com/view/ldVSD1
 
 //#define DEBUG_DISABLE_BLACK_BAR_SPLITS
 //#define DEBUG_DISABLE_TEXT
@@ -235,7 +235,7 @@ X----X-+-X----+
 
 // ---- GLOBALS --------------------------------
 
-	// TODO -- could prefix these with "g" or "g_"
+    // TODO -- could prefix these with "g" or "g_"
 
     // quantized zoom:
     float ZOOM;
@@ -424,13 +424,14 @@ vec3 pattern2(vec2 uv)
     // translate
     uv.xy -= vec2(0.5, 0.5);
     uv.y *= aspect;
+
     // rotate
-   	vec2 p = rotateXY( uv, angle );
+    vec2 p = rotateXY( uv, angle );
     // translate back
     p += vec2(0.5, 0.5);
     
     const float NUM_CELLS = 4.0;
-	float checkerboard = (
+    float checkerboard = (
         (fract(p.x*NUM_CELLS) > 0.5) ^^ 
         (fract(p.y*NUM_CELLS) > 0.5)
             ? 1.0
@@ -458,7 +459,7 @@ vec3 pattern3(vec2 uv)
 
     // rotate
     float angle = iGlobalTime * 0.05;
-	cam.xy = rotateXY( cam.xy, angle );
+    cam.xy = rotateXY( cam.xy, angle );
 
     // textured
     float checkerboard = (
@@ -501,29 +502,29 @@ vec3 pixelSet(vec2 uv)
     // Thus for our three patterns, with a repeat of 2:
     // E.g.:
     // 1. A
-	// 2. A
-	// 3. A -> B  
-	// 4.      B
-	// 5.      B
-	// 6.      B -> C
-	// 7.           C
-	// 8.           C
-	// 9. A <------ C
+    // 2. A
+    // 3. A -> B  
+    // 4.      B
+    // 5.      B
+    // 6.      B -> C
+    // 7.           C
+    // 8.           C
+    // 9. A <------ C
     
     // Thus for our three patterns, with a repeat of 3:
     // E.g.:
     //  1. A
     //  2. A
-	//  3. A
-	//  4. A -> B  
-	//  5.      B
-	//  6.      B
-	//  7.      B
-	//  8.      B -> C
-	//  9.           C
-	// 10.           C
-	// 11.           C
-	// 12. A <------ C
+    //  3. A
+    //  4. A -> B  
+    //  5.      B
+    //  6.      B
+    //  7.      B
+    //  8.      B -> C
+    //  9.           C
+    // 10.           C
+    // 11.           C
+    // 12. A <------ C
     
     float t = mod(tDistort, NUM_FRAMES ); // 0.0..NUM_FRAMES, wraps
     float f = smoothstep(0.0, 1.0, fract(tDistort)); // change from linear to smooth
@@ -630,10 +631,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         float(iResolution.y < 310.0);
     
     // 0.5 = center, to see most of the AA methods
-	origM.x = mix(origM.x, 0.5, multChange);
+    origM.x = mix(origM.x, 0.5, multChange);
     
     // 1.5 is the middle of the ZOOM=2 region
-	origM.y = mix(origM.y, 1.5 / MAX_ZOOM, multChange);
+    origM.y = mix(origM.y, 1.5 / MAX_ZOOM, multChange);
 
     
     // ---- ZOOM QUANTIZE ----
@@ -660,7 +661,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     vec3 color = vec3( 0.0 );
 
     // ----------------------------------------------------------------
-	// 1. Header
+    // 1. Header
     // background bar
     if (fragCoord.y > (iResolution.y - gvFontSize.y - 2.0))
     {
@@ -670,7 +671,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     }
     
     // ----------------------------------------------------------------
-	// 2. Main Image (between the header/footer)
+    // 2. Main Image (between the header/footer)
     else
     {
         // ---- QUANTIZE TO ZOOM ----
@@ -684,14 +685,14 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         
         // ---- SPLIT SCREEN ---- DIFFERENT AA METHODS ----
         
-    	/* (UNOPTIMIZED VERSION)
+        /* (UNOPTIMIZED VERSION)
              if (origP.x < mx0) color = pixelSet   ( uv ); // no AA
         else if (origP.x < mx1) color = aa_quincunx( uv ); // 2 samples          }
         else if (origP.x < mx2) color = aa_2x2     ( uv ); // 4 samples          }-> similar algorithms (in this shader, that is = share code)
         else if (origP.x < mx3) color = aa_3dfx    ( uv ); // 4 samples (better) }
         else if (origP.x < mx4) color = aa_nxn     ( uv ); // 16 samples
         else                    color = aa_random  ( uv ); // 64 samples
-	    */
+        */
         
         // TODO -- we should show the resultant if-statement layoyut below
         //         in a simple format where we just call getColorX(),
@@ -717,9 +718,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             
         if (origP.x < mx3) {
             
-	        // ---- METHOD 2 & 3 & 4 ---- ALL ARE SHARING SOME PIXEL SHADER CODE ----
+            // ---- METHOD 2 & 3 & 4 ---- ALL ARE SHARING SOME PIXEL SHADER CODE ----
 
-    	    // ---- METHOD 3. 2x2 ----
+            // ---- METHOD 3. 2x2 ----
             
             // fragCoord = pixel, not normalized
             vec2  q = vec2( 0.25, 0.25 ); // common factor: aa_2x2(), aa_3dfx()
@@ -728,16 +729,16 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             float w2 = 0.0 ;
             
 
-	        // ---- METHOD 4. 3DFX ----
+            // ---- METHOD 4. 3DFX ----
 
             if (origP.x > mx2) {
                 // WE KNOW THE RESULT OF THIS:
                 // small = 0.11218413712
                 // large = 0.33528304367
                 q = vec2(0.11218413712, 0.33528304367);
-            } 
+            }
             
-    	    // ---- METHOD 2. QUINCUNX ----
+            // ---- METHOD 2. QUINCUNX ----
 
             if (origP.x < mx1) {
                 // color = aa_quincunx( uv ); 
@@ -756,9 +757,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             color = vec3(
                 (
                     pixelSet(uv + vec2(-q.x, +q.y)) +
-                	pixelSet(uv + vec2(+q.y, +q.x)) +
-                	pixelSet(uv + vec2(+q.x, -q.y)) +
-                	pixelSet(uv + vec2(-q.y, -q.x))
+                    pixelSet(uv + vec2(+q.y, +q.x)) +
+                    pixelSet(uv + vec2(+q.x, -q.y)) +
+                    pixelSet(uv + vec2(-q.y, -q.x))
                 )                                     * w1 +
                 pixelSet(uv + vec2( 0.0,  0.0))       * w2
             );
