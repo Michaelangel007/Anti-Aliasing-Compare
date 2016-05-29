@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 41J
+/* Anti-Aliasing Tests - rev. 42J
    May 21-28, 2016
 
    Authors: 
@@ -526,7 +526,7 @@ vec3 pixelSet(vec2 uv)
     // we should double / triple (or more) up frames for static patterns,
     // so the fades take a short amount of time.    
     
-    const float REPEAT_PER_PATTERN = 6.0; // number of frames of just a single pattern (between fades)
+    const float REPEAT_PER_PATTERN = 9.0; // number of frames of just a single pattern (between fades)
     const float NUM_FRAMES_PER_PATTERN = REPEAT_PER_PATTERN + 1.0; // + 1.0 for the fade
     
     const float NUM_PATTERNS = 3.0;
