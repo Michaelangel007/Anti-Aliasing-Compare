@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 48J
+/* Anti-Aliasing Tests - rev. 49J
    May 21-29, 2016
 
    Authors: 
@@ -20,8 +20,9 @@
 
 // ---- MAIN SETTINGS --------------------------------
 
-#define METHOD_NXN_N  4     // *See Note 5 above.
-#define METHOD_RND_NXN_N 8  // *See Note 6 above.
+// see Note 5 and 6 above:
+#define METHOD_NXN_N     4 
+#define METHOD_RND_NXN_N 8
 //  4x 4 =   16 samples
 //  8x 8 =   64 samples
 // 16x16 =  256 samples
@@ -231,12 +232,15 @@ X----X-+-X----+
 
 // ---- MINOR SETTINGS --------------------------------
 
+// pattern 1:
 #define CIRCLE_PERCENTAGE_OF_SCREEN 0.90
+// these should be integers:
 #define MIN_ZOOM 1.0
 #define MAX_ZOOM 8.0
-#define COLOR_TITLE      vec3( 0.0, 0.4, 1.0 ) // text
-#define BG_COLOR         vec3( 1.0, 0.9, 0.8 )
-#define COLOR_ZOOM       vec3( 0.0, 0.8, 0.0 )
+// colors:
+#define BG_COLOR         vec3( 1.0, 0.8, 0.6 )
+#define COLOR_TITLE      vec3( 0.0, 0.3, 1.0 )
+#define COLOR_ZOOM       vec3( 0.0, 0.7, 0.0 )
 #define COLOR_EQUALS     vec3( 0.0, 0.0, 0.0 )
 #define COLOR_ZOOMFACTOR vec3( 1.0, 0.0, 0.0 )
 
@@ -676,7 +680,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float mx4 = origM.x + 0.40;
     float mx5 = origM.x + 0.60;
         
-	float colorRGB = 0.0; // this represents ALL three RGB; grayscale only!
+	vec3 color = vec3(0.0); // final RGB color
+	float colorRGB = 0.0; // single color channel: represents ALL three RGB = grayscale only!
 		
     // ----------------------------------------------------------------
     // 1. Header
@@ -684,13 +689,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     if (fragCoord.y > (iResolution.y - gvFontSize.y - 2.0))
     {
         // the AA method names:
-		vec3 color;
         color = drawTitle( fragCoord, mx0, mx1, mx2, mx3, mx4, mx5 );
         color = drawZoom ( fragCoord, color );
-		
-		// ---- FINAL RESULT ----
-		fragColor = vec4(color, 1.);
-		return;
     }
     
     // ----------------------------------------------------------------
@@ -829,14 +829,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 		// ---- GAMMA CORRECTION ----
 		
-		const float invGamma = 1. / GAMMA_CORRECTION;    
-		colorRGB = pow(colorRGB, invGamma);
+		const float invGamma = 1. / GAMMA_CORRECTION;
+		color = vec3(pow(colorRGB, invGamma));
+        
     } // else 2. MAIN IMAGE
-    
 
     // ---- SHOW BLACK BAR SPLITS BETWEEN AA METHODS ----
-	
-	vec3 color = vec3(colorRGB);
 
     // float fade = 1.0; // TODO: Need to account for mouse y position: m.y;
     #define X1 0.002
@@ -849,6 +847,5 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     color *=        smoothstep( X1, X2, abs(origP.x-mx5) );
     
     // ---- FINAL RESULT ----
-    fragColor = vec4(color, 1.);
-    
+    fragColor = vec4(color, 1.);    
 }
