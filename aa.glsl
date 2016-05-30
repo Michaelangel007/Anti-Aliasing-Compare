@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 44J
+/* Anti-Aliasing Tests - rev. 45J
    May 21-29, 2016
 
    Authors: 
@@ -327,7 +327,7 @@ float DigitBin(const in int x)
 // ---- TEXT --------------------------------
 
 vec2 gvPrintCharXY = vec2( 0.0, 0.0 );
-vec3 Char(  vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue )
+vec3 Char( vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue )
 {
     vec2 vStringCharCoords = (fragCoord.xy - gvPrintCharXY) / gvFontSize;
     if ((vStringCharCoords.y <  0.0) || 
@@ -390,7 +390,7 @@ vec2 noise2( vec2 location, vec2 delta ) {
 // ---- PATTERNS TO ANTI-ALIAS --------------------------------
 
 // patternSet_circleWithSpokes
-vec3 pattern1( vec2 uv )
+float pattern1( vec2 uv )
 {    
     // full circle
     vec2 p = (2.*uv - 1.) / CIRCLE_PERCENTAGE_OF_SCREEN;
@@ -406,15 +406,14 @@ vec3 pattern1( vec2 uv )
     
     float insideSpokes = float(mod(atan(p.y, p.x) + iGlobalTime / 40., PI/8.) < 0.15);
 
-    return vec3(
+    return 
     	mod(insideCircle + 
             insideSpokes * (1. - g), 
-            1.333)
-    );
+            1.333);
 }
 
 // patternSet_2Dchecker
-vec3 pattern2(vec2 uv)
+float pattern2(vec2 uv)
 {
     // correct for aspect ratio    
     float aspect = iResolution.y/iResolution.x;
@@ -455,11 +454,11 @@ vec3 pattern2(vec2 uv)
     float checkerboard2 = float(int(p2.x*NUM_CELLS)) + float(int(p2.y*NUM_CELLS));
     
     // combine
-    return vec3(mod(checkerboard1 + checkerboard2, 2.0));
+    return mod(checkerboard1 + checkerboard2, 2.0);
 }
 
 // patternSet_3Dchecker
-vec3 pattern3(vec2 uv)
+float pattern3(vec2 uv)
 {
     // distance from center
     vec2 dCenter = vec2(0.5, 0.5) - uv.xy;
@@ -481,16 +480,15 @@ vec3 pattern3(vec2 uv)
     cam.xy = rotateXY( cam.xy, angle );
 
     // textured
-    return vec3(
+    return
         mod(
             float(fract(cam.x) < 0.5) + 
             float(fract(cam.y) < 0.5), 
             2.0
-           )
-               );
+           );
 }
 
-vec3 pixelSet(vec2 uv)
+float pixelSet(vec2 uv)
 {
     
     // our position (already quantized ZOOM):
@@ -678,16 +676,21 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     float mx4 = origM.x + 0.40;
     float mx5 = origM.x + 0.60;
         
-    vec3 color = vec3( 0.0 );
-
+	float colorRGB = 0.0; // this represents ALL three RGB; grayscale only!
+		
     // ----------------------------------------------------------------
     // 1. Header
     // background bar
     if (fragCoord.y > (iResolution.y - gvFontSize.y - 2.0))
     {
         // the AA method names:
+		vec3 color;
         color = drawTitle( fragCoord, mx0, mx1, mx2, mx3, mx4, mx5 );
         color = drawZoom ( fragCoord, color );
+		
+		// ---- FINAL RESULT ----
+		fragColor = vec4(color, 1.);
+		return;
     }
     
     // ----------------------------------------------------------------
@@ -708,8 +711,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         /* (UNOPTIMIZED VERSION)
              if (origP.x < mx0) color = pixelSet   ( uv ); // no AA
         else if (origP.x < mx1) color = aa_quincunx( uv ); // 2 samples          }
-        else if (origP.x < mx2) color = aa_2x2     ( uv ); // 4 samples          }-> similar algorithms (in this shader, that is = share code)
-        else if (origP.x < mx3) color = aa_3dfx    ( uv ); // 4 samples (better) }
+        else if (origP.x < mx2) color = aa_2x2     ( uv ); // 4 samples          }-> similar algorithms
+        else if (origP.x < mx3) color = aa_3dfx    ( uv ); // 4 samples (better) }   (in this shader, that is = share code)
         else if (origP.x < mx4) color = aa_nxn     ( uv ); // 16 samples
         else                    color = aa_random  ( uv ); // 64 samples
         */
@@ -718,12 +721,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         //         in a simple format where we just call getColorX(),
         //         and setCommon(), so that we can see what we've optimized,
         //         in terms of if statement depth.
-
+		
         // ---- METHOD 1. NO AA ----
         
         if( origP.x < mx0 )
         {
-            color = pixelSet   ( uv );
+            colorRGB = pixelSet   ( uv );
         }
         else
           
@@ -761,7 +764,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             // ---- METHOD 2. QUINCUNX ----
 
             if (origP.x < mx1) {
-                // color = aa_quincunx( uv ); 
+                // colorRGB = aa_quincunx( uv ); 
                 //q = vec2( 0.5, 0.5 );
                 q *= 2.0; // 0.5, 0.5
 
@@ -774,15 +777,11 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                
             }
 
-            color = vec3(
-                (
-                    pixelSet(uv + vec2(-q.x, +q.y)) +
-                    pixelSet(uv + vec2(+q.y, +q.x)) +
-                    pixelSet(uv + vec2(+q.x, -q.y)) +
-                    pixelSet(uv + vec2(-q.y, -q.x))
-                )                                     * w1 +
-                pixelSet(uv + vec2( 0.0,  0.0))       * w2
-            );
+            colorRGB = ( pixelSet(uv + vec2(-q.x, +q.y)) +
+                         pixelSet(uv + vec2(+q.y, +q.x)) +
+                         pixelSet(uv + vec2(+q.x, -q.y)) +
+                         pixelSet(uv + vec2(-q.y, -q.x)) ) * w1 +
+                       ( pixelSet(uv + vec2( 0.0,  0.0)) ) * w2;
         }
         
         // ---- METHOD 5. NxN ----
@@ -803,10 +802,10 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     float n2 = float(j) * invNxN;                    
                     
                     vec2 offset = vec2(n1, n2) - vec2(0.5, 0.5); 
-                    color += pixelSet(uv + offset);
+                    colorRGB += pixelSet(uv + offset);
                 }
             }
-            color /= float(METHOD_NXN_N * METHOD_NXN_N);
+            colorRGB /= float(METHOD_NXN_N * METHOD_NXN_N);
         }
 
         // ---- METHOD 6. RANDOM NxN STATIC ----
@@ -822,28 +821,22 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
                     vec2 q = t * vec2(float(i), float(j)); // this could partially be optimized outside the loop
                     vec2 n = noise2( uv , q );
                     vec2 offset = vec2(n.x, n.y) - vec2(0.5, 0.5);
-                    color += pixelSet(uv + offset);
+                    colorRGB += pixelSet(uv + offset);
                 }
             }
-            color /= float(METHOD_RND_NXN_N * METHOD_RND_NXN_N);           
+            colorRGB /= float(METHOD_RND_NXN_N * METHOD_RND_NXN_N);           
         }        
-    }
+
+		// ---- GAMMA CORRECTION ----
+		
+		const float invGamma = 1. / GAMMA_CORRECTION;    
+		colorRGB = pow(colorRGB, invGamma);
+    } // else 2. MAIN IMAGE
     
-    // ---- GAMMA CORRECTION ----
-    
-   
-    // TODO -- if we're always doing grayscale, then we need to compute only one of these.
-    //         in fact, that goes for the ENTIRE PROGRAM, except for the bars after this:
-    // CAUTION: It likely isn't any faster, since vec3(v) is probably just as fast as float(v)
-    //          And the HUD is colorized.  But we could return early for them.  But it makes the code ugly.
-    //          It only really saves on this gamma correction AFTER super-sampling is done:
-    
-    const float invGamma = 1. / GAMMA_CORRECTION;    
-    color = vec3(pow(color.r, invGamma),
-                 pow(color.g, invGamma),
-                 pow(color.b, invGamma));
 
     // ---- SHOW BLACK BAR SPLITS BETWEEN AA METHODS ----
+	
+	vec3 color = vec3(colorRGB);
 
     // float fade = 1.0; // TODO: Need to account for mouse y position: m.y;
     #define X1 0.002
@@ -854,7 +847,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     color *=        smoothstep( X1, X2, abs(origP.x-mx3) );
     color *=        smoothstep( X1, X2, abs(origP.x-mx4) );
     color *=        smoothstep( X1, X2, abs(origP.x-mx5) );
-
     
     // ---- FINAL RESULT ----
     fragColor = vec4(color, 1.);
