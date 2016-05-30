@@ -1,5 +1,5 @@
-/* Anti-Aliasing Tests - rev. 43J
-   May 21-28, 2016
+/* Anti-Aliasing Tests - rev. 44J
+   May 21-29, 2016
 
    Authors: 
      Jason Doucette:    https://www.shadertoy.com/user/JasonD        
@@ -273,7 +273,7 @@ float DigitBin(const in int x)
     if (x < 10)
         return // originals:
            x==0 ? 480599.0
-          :x==1 ? 139810.0
+          :x==1 ? 143906.0 //139810.0
           :x==2 ? 476951.0
           :x==3 ? 476999.0
           :x==4 ? 350020.0
@@ -330,10 +330,14 @@ vec2 gvPrintCharXY = vec2( 0.0, 0.0 );
 vec3 Char(  vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue )
 {
     vec2 vStringCharCoords = (fragCoord.xy - gvPrintCharXY) / gvFontSize;
-    if ((vStringCharCoords.y < 0.0) || (vStringCharCoords.y >= 1.0)) return backgroundColor;
-    if ( vStringCharCoords.x < 0.0)                                  return backgroundColor;
+    if ((vStringCharCoords.y <  0.0) || 
+        (vStringCharCoords.y >= 1.0) || 
+        ( vStringCharCoords.x < 0.0))
+    {
+        return backgroundColor;
+    }
 
-    float fCharBin = (vStringCharCoords.x < 1.0) ? DigitBin(int(fValue)) : 0.0;
+    float fCharBin = float(vStringCharCoords.x < 1.0) * DigitBin(int(fValue));
 
     // Auto-Advance cursor one glyph plus 1 pixel padding
     // thus characters are spaced 9 pixels apart    
@@ -347,7 +351,7 @@ vec3 Char(  vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue )
         || (fValue == 89.) // Y
         || (fValue == 90.) // Z        
         ? 0.0 // glyph width has no padding
-        : */ 1.0; 
+        : */ 2.0; 
     gvPrintCharXY.x += gvFontSize.x + fAdvance;
         
     float a = floor(
@@ -393,11 +397,20 @@ vec3 pattern1( vec2 uv )
    
     // quick semi-distance to circle formula:
     float g = dot( p, p );
+    
+    float insideCircle = float(
+        ((g < 1.0 ) && (g > 0.85 )) ||
+        ((g < 0.6 ) && (g > 0.5  )) ||
+        ((g < 0.2 ) && (g > 0.1  ))
+    );
+    
+    float insideSpokes = float(mod(atan(p.y, p.x) + iGlobalTime / 40., PI/8.) < 0.15);
 
-    float t = iGlobalTime * 0.15;
-    float insideCircle = float(int(g * 5.                    + t));
-    float insideSpokes = float(int(atan(p.y, p.x) / PI * 12. + t));
-    return vec3(mod(insideCircle + insideSpokes, 2.0));
+    return vec3(
+    	mod(insideCircle + 
+            insideSpokes * (1. - g), 
+            1.333)
+    );
 }
 
 // patternSet_2Dchecker
@@ -451,8 +464,8 @@ vec3 pattern3(vec2 uv)
     // distance from center
     vec2 dCenter = vec2(0.5, 0.5) - uv.xy;
     
-    float X_INV_SCALE = 1.5;
-    float Z_INV_SCALE = 0.6;
+    float X_INV_SCALE = 1.0;
+    float Z_INV_SCALE = 0.5;
     
     // 3D perspective: 1/Z = constant
     vec3 cam;
