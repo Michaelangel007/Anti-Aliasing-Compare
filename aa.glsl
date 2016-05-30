@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 47J
+/* Anti-Aliasing Tests - rev. 48J
    May 21-29, 2016
 
    Authors: 
@@ -610,7 +610,7 @@ vec3 drawTitle( in vec2 fragCoord,
 vec3 drawZoom ( vec2 fragCoord, vec3 color ) 
 {
     // "Z=x" text, where x = the zoom factor
-    gvPrintCharXY = vec2( 1.0, iResolution.y - gvFontSize.y * 2. - 2.);
+    gvPrintCharXY = vec2( 1.0, iResolution.y - gvFontSize.y - 1.);
     
     //color = drawStatus( color, fragCoord, nameLit, equalsLit );
     color = Char( color, COLOR_ZOOM  , fragCoord, 90.0 ); // Z
@@ -681,7 +681,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     // ----------------------------------------------------------------
     // 1. Header
     // background bar
-    if (fragCoord.y > (iResolution.y - gvFontSize.y * 2.0 - 3.0))
+    if (fragCoord.y > (iResolution.y - gvFontSize.y - 2.0))
     {
         // the AA method names:
 		vec3 color;
