@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 45J
+/* Anti-Aliasing Tests - rev. 46J
    May 21-29, 2016
 
    Authors: 
@@ -234,9 +234,9 @@ X----X-+-X----+
 #define CIRCLE_PERCENTAGE_OF_SCREEN 0.90
 #define MIN_ZOOM 1.0
 #define MAX_ZOOM 8.0
-#define COLOR_TITLE      vec3( 0.0, 0.3, 1.0 ) // text
-#define BG_COLOR         vec3( 1.0, 0.8, 0.6 )
-#define COLOR_ZOOM       vec3( 0.0, 0.7, 0.0 )
+#define COLOR_TITLE      vec3( 0.0, 0.4, 1.0 ) // text
+#define BG_COLOR         vec3( 1.0, 0.9, 0.8 )
+#define COLOR_ZOOM       vec3( 0.0, 0.8, 0.0 )
 #define COLOR_EQUALS     vec3( 0.0, 0.0, 0.0 )
 #define COLOR_ZOOMFACTOR vec3( 1.0, 0.0, 0.0 )
 
