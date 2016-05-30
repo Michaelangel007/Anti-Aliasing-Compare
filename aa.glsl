@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 42J
+/* Anti-Aliasing Tests - rev. 43J
    May 21-28, 2016
 
    Authors: 
@@ -393,26 +393,11 @@ vec3 pattern1( vec2 uv )
    
     // quick semi-distance to circle formula:
     float g = dot( p, p );
-    
-    float quarterTime = iGlobalTime * 0.15;
 
-    float dt = sin(quarterTime) * 0.05;
-    // TODO -- LOTS OF COMPARES... BAD?
-    bool insideCircle = 
-        ((g <  1.0    ) && (g >  0.85   )) ||
-        ((g <  0.6    ) && (g >  0.4    )) ||
-        ((g < (0.2+dt)) && (g > (0.1+dt)));
-    
-    // TODO -- can't we replace atan() with some clever dot()?
-    //         after all it should return -1..+1, 
-    //         and we could use that as an angle.
-    bool insideSpokes = mod(atan(p.y, p.x) + quarterTime/10., PI/8.) < 0.15;
-    
-    float v = mod(float(insideCircle) *  1.0 + 
-                  float(insideSpokes) * (1. - g), 
-                  1.333);
-
-    return vec3(v,v,v);
+    float t = iGlobalTime * 0.15;
+    float insideCircle = float(int(g * 5.                    + t));
+    float insideSpokes = float(int(atan(p.y, p.x) / PI * 12. + t));
+    return vec3(mod(insideCircle + insideSpokes, 2.0));
 }
 
 // patternSet_2Dchecker
@@ -428,49 +413,36 @@ vec3 pattern2(vec2 uv)
     //         We are translating, rotating, scaling, translating
     //         Twice.  Grabbing coordinates within each.
 
+    const float NUM_CELLS = 8.0;
+    const float SHIFT_POSITIVE = 32.0; // ensure no negatives are rendered, since we use int(x)
+    
+    vec2 pStart = uv.xy - vec2(0.5);
+    pStart.y *= aspect;
+    
     // 1. normal checkerboard
     
     // translate
-    vec2 p1;
-    p1.xy = uv.xy - vec2(0.5, 0.5);
-    p1.y *= aspect;
+    vec2 p1 = pStart;
     // rotate
-       p1 = rotateXY( p1, angle );
+    p1 = rotateXY( p1, angle );
     // translate back
-    p1 += vec2(0.5, 0.5);
-    
-    const float NUM_CELLS = 4.0;
-    float checkerboard1 = (
-        (fract(p1.x * NUM_CELLS) > 0.5) ^^ 
-        (fract(p1.y * NUM_CELLS) > 0.5)
-            ? 1.0
-            : 0.0);
+    p1 += vec2(SHIFT_POSITIVE + 0.5);    
+    float checkerboard1 = float(int(p1.x*NUM_CELLS)) + float(int(p1.y*NUM_CELLS));
     
     // 2. 45 degree rotated checkerboard, zoomed to match vertices
     
     // translate
-    vec2 p2;
-    p2.xy = uv.xy-vec2(0.5, 0.5);
-    p2.y *= aspect;
+    vec2 p2 = pStart;
     // rotate
-       p2 = rotateXY( p2, angle + PI / 4.0);
+    p2 = rotateXY( p2, angle + PI / 4.0);
     // expand
     p2 *= 1.41421356237;
     // translate back
-    p2 += vec2(0.5, 0.5);
+    p2 += vec2(SHIFT_POSITIVE + 0.5);
+    float checkerboard2 = float(int(p2.x*NUM_CELLS)) + float(int(p2.y*NUM_CELLS));
     
-    const float NUM_CELLS2 = 4.0;
-    float checkerboard2 = (
-        (fract(p2.x * NUM_CELLS2) > 0.5) ^^ 
-        (fract(p2.y * NUM_CELLS2) > 0.5)
-            ? 1.0
-            : 0.0);
-
-    // check:
-    //return vec3(checkerboard1, checkerboard2, 0.0);
-    return vec3(
-        mod(checkerboard1 + checkerboard2, 2.0)
-    );
+    // combine
+    return vec3(mod(checkerboard1 + checkerboard2, 2.0));
 }
 
 // patternSet_3Dchecker
@@ -496,11 +468,13 @@ vec3 pattern3(vec2 uv)
     cam.xy = rotateXY( cam.xy, angle );
 
     // textured
-    float checkerboard = (
-        mod(floor(cam.x), 2.0) == mod(floor(cam.y), 2.0) 
-            ? 1.0
-            : 0.0);  
-    return vec3(checkerboard);
+    return vec3(
+        mod(
+            float(fract(cam.x) < 0.5) + 
+            float(fract(cam.y) < 0.5), 
+            2.0
+           )
+               );
 }
 
 vec3 pixelSet(vec2 uv)
