@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 51M
+/* Anti-Aliasing Tests - rev. 52J
    May 21 - June 5, 2016
 
    Authors: 
@@ -29,15 +29,15 @@
 // 32x32 = 1024 samples
 
 #define GAMMA_CORRECTION 2.2
-    // check gamma:  https://www.shadertoy.com/view/ldVSD1
+// check your monitor gamma here:  https://www.shadertoy.com/view/ldVSD1
 
-// NOTE: Scroll down for more settings that are possible.
+// (NOTE: More internal settings are listed much further below.)
 
 
 // ---- METHOD EXPLANATIONS --------------------------------
 /*
 
-======== 1. none   
+======== 1. none ========
 
 A single sample is used from the pixel's center:
 
@@ -52,7 +52,7 @@ A single sample is used from the pixel's center:
 +------+------+
 
 
-======== 2. nVidia Quincunx    
+======== 2. nVidia Quincunx ========
 
 5 samples are used:
 - 1 in the center
@@ -81,7 +81,7 @@ This is essentiall a blur.
 
 
 
-======== 3. standard 2x2 supersample 
+======== 3. standard 2x2 supersample ========
 
 4 samples are taken within a pixel,
 equi-distance from each other,
@@ -98,7 +98,7 @@ and from samples from adjacent pixels
 +------+------+
 
 
-======== 4. 3Dfx rotated grid        
+======== 4. 3Dfx rotated grid ========
 
 4 samples are taken within a pixel.
 equi-distance from each other,
@@ -186,7 +186,7 @@ The 4 resultant dots (rotated 26.5 degrees clockwise) are:
  4. -large, -small
 
 
-======== 5. standard NxN supersample 
+======== 5. standard NxN supersample ========
 
 Subdivides the pixel by N in both directions.
 For N = 4:
@@ -202,7 +202,7 @@ For N = 4:
 +------+------+
 
 
-======== 6. & 7. random supersample       
+======== 6. & 7. random supersample ========
 
 Same as NxX, except it's random.
 6. This could be static, which avoids moire patterns.
@@ -221,16 +221,15 @@ X----X-+-X----+
 
 
 
-======== 8. ADDITIONAL METHODS: EXERCISE FOR THE READER:
+======== 8. ADDITIONAL METHODS: EXERCISE FOR THE READER :) ========
 
-7A. make a higher sample rate for 3Dfx's method, say a 4x4 grid.
-7B. compare identical sample numbers, say 4x4 square vs. 4x4 random.
-7C. define DISABLE_RND_TEMPORAL_COHERENCE to see random NxN with static sample locations.
+-	make a higher sample rate for 3Dfx's method, say a 4x4 grid!
+-	compare identical sample numbers, say 4x4 square vs. 4x4 random.
 
 */
 
 
-// ---- MINOR SETTINGS --------------------------------
+// ---- INTERNAL SETTINGS --------------------------------
 
 // pattern 1:
 #define CIRCLE_PERCENTAGE_OF_SCREEN 0.90
@@ -255,8 +254,8 @@ X----X-+-X----+
     float ZOOM;
 
     // ORIGINAL positions BEFORE zoom:
-    vec2 origM; // 0..1
-    vec2 origP; // 0..1
+    vec2 origM; // 0..1 (mouse)
+    vec2 origP; // 0..1 (pixel position)
 
     // MODIFIED based on quantized zoom, used in many functions:
     vec2  res; // resolution
@@ -417,6 +416,7 @@ vec2 noise2( vec2 location, vec2 delta ) {
 
 // ---- PATTERNS TO ANTI-ALIAS --------------------------------
 
+// ------------------------------------------------------------
 // patternSet_circleWithSpokes
 float pattern1( vec2 uv )
 {    
@@ -440,6 +440,7 @@ float pattern1( vec2 uv )
             1.333);
 }
 
+// ------------------------------------------------------------
 // patternSet_2Dchecker
 float pattern2(vec2 uv)
 {
@@ -487,11 +488,15 @@ float pattern2(vec2 uv)
     return mod(p1.x+p1.y + p2.x+p2.y, 2.0);
 }
 
+// ------------------------------------------------------------
 // patternSet_3Dchecker
 float pattern3(vec2 uv)
 {
     // distance from center
-    vec2 dCenter = vec2(0.5, 0.5) - uv.xy;
+    // NOTE: 0.499 is to avoid the infinity in mid-Y,
+    // which, for our checkerboard calculation, produces NaN,
+    // which shows as black (fully visible during transitions!)   
+    vec2 dCenter = vec2(0.5, 0.499) - uv.xy;
     
     float X_INV_SCALE = 1.0;
     float Z_INV_SCALE = 0.5;
@@ -514,6 +519,7 @@ float pattern3(vec2 uv)
     return mod(cam.x+cam.y, 2.0);
 }
 
+// ------------------------------------------------------------
 float pixelSet(vec2 uv)
 {
     
@@ -724,9 +730,9 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
         vec2 uv = floor(fragCoord / ZOOM) * ZOOM;
         
         // then do actual zoom (center zoom on 0.5,0.5)
-        res = (vec2(0.5, 0.5) - iResolution.xy) / ZOOM;
-        mou = (vec2(0.5, 0.5) - iMouse.xy     ) / ZOOM;
-        uv  = (vec2(0.5, 0.5) - uv.xy         ) / ZOOM;
+        res = (vec2(0.5) - iResolution.xy) / ZOOM;
+        mou = (vec2(0.5) - iMouse.xy     ) / ZOOM;
+        uv  = (vec2(0.5) - uv.xy         ) / ZOOM;
         
         // ---- SPLIT SCREEN ---- DIFFERENT AA METHODS ----
         
