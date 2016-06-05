@@ -1,4 +1,4 @@
-/* Anti-Aliasing Tests - rev. 52J
+/* Anti-Aliasing Tests - rev. 53J
    May 21 - June 5, 2016
 
    Authors: 
@@ -237,9 +237,9 @@ X----X-+-X----+
 #define MIN_ZOOM 1.0
 #define MAX_ZOOM 8.0
 // colors:
-#define BG_COLOR         vec3( 1.0, 0.8, 0.6 )
+#define BG_COLOR         vec3( 0.8, 1.0, 0.8 )
 #define COLOR_TITLE      vec3( 0.0, 0.3, 1.0 )
-#define COLOR_ZOOM       vec3( 0.0, 0.7, 0.0 )
+#define COLOR_ZOOM       vec3( 0.8, 0.0, 0.8 )
 #define COLOR_EQUALS     vec3( 0.0, 0.0, 0.0 )
 #define COLOR_ZOOMFACTOR vec3( 1.0, 0.0, 0.0 )
 
@@ -354,12 +354,12 @@ float DigitBin(const in int x)
 // ---- TEXT --------------------------------
 
 vec2 gvPrintCharXY = vec2( 0.0, 0.0 );
-vec3 Char( vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue )
+vec3 Char( vec3 backgroundColor, vec3 textColor, vec2 fragCoord, float fValue)
 {
     vec2 vStringCharCoords = (fragCoord.xy - gvPrintCharXY) / gvFontSize;
     if ((vStringCharCoords.y <  0.0) || 
         (vStringCharCoords.y >= 1.0) || 
-        ( vStringCharCoords.x < 0.0))
+        (vStringCharCoords.x <  0.0))
     {
         return backgroundColor;
     }
@@ -591,6 +591,7 @@ float pixelSet(vec2 uv)
 
 // ---- HUD TITLE & ZOOM --------------------------------
 
+// -------------------------------------------------
 vec3 drawTitle( in vec2 fragCoord, 
                // TODO --- these are equidistant, so why not pass in START and DELTA_X?
                float mx0, 
@@ -608,48 +609,49 @@ vec3 drawTitle( in vec2 fragCoord,
     gvPrintCharXY.y = iResolution.y - gvFontSize.y - 1.;
     
     gvPrintCharXY.x = mx0*scale - center;
-    color = Char( color, COLOR_TITLE, fragCoord, 45. ); // -
+    color = Char( color, COLOR_TITLE, fragCoord, 45.); // -
 
     gvPrintCharXY.x = mx1*scale - center;
-    color = Char( color, COLOR_TITLE, fragCoord, 81. ); // Q
-    color = Char( color, COLOR_TITLE, fragCoord, 67. ); // C
+    color = Char( color, COLOR_TITLE, fragCoord, 81.); // Q
+    color = Char( color, COLOR_TITLE, fragCoord, 67.); // C
 
     gvPrintCharXY.x = mx2*scale - center;
-    color = Char( color, COLOR_TITLE, fragCoord,  2. ); // 2
-    color = Char( color, COLOR_TITLE, fragCoord, 42. ); // *
+    color = Char( color, COLOR_TITLE, fragCoord,  2.); // 2
+    color = Char( color, COLOR_TITLE, fragCoord, 42.); // *
 
     gvPrintCharXY.x = mx3*scale - center;
-    color = Char( color, COLOR_TITLE, fragCoord,  3. ); // 3
-    color = Char( color, COLOR_TITLE, fragCoord, 68. ); // D
+    color = Char( color, COLOR_TITLE, fragCoord,  3.); // 3
+    color = Char( color, COLOR_TITLE, fragCoord, 68.); // D
 
     gvPrintCharXY.x = mx4*scale - center;
-    color = Char( color, COLOR_TITLE, fragCoord, 78. ); // N
-    color = Char( color, COLOR_TITLE, fragCoord, 42. ); // *
+    color = Char( color, COLOR_TITLE, fragCoord, 78.); // N
+    color = Char( color, COLOR_TITLE, fragCoord, 42.); // *
 
     gvPrintCharXY.x = mx5*scale - center;
-    color = Char( color, COLOR_TITLE, fragCoord, 82. ); // R
-    color = Char( color, COLOR_TITLE, fragCoord, 1.  ); // 1
+    color = Char( color, COLOR_TITLE, fragCoord, 82.); // R
+    color = Char( color, COLOR_TITLE, fragCoord, 1. ); // 1
 
     gvPrintCharXY.x = mx5*scale + center;
     //                          ^-- positive, to show on the other side of the line
 
-    color = Char( color, COLOR_TITLE, fragCoord, 82. ); // R
-    color = Char( color, COLOR_TITLE, fragCoord, 2.  ); // 2
+    color = Char( color, COLOR_TITLE, fragCoord, 82.); // R
+    color = Char( color, COLOR_TITLE, fragCoord, 2. ); // 2
 
     return color;
 }
 
+// -------------------------------------------------
 vec3 drawZoom ( vec2 fragCoord, vec3 color ) 
 {
     // "Z=x" text, where x = the zoom factor
     gvPrintCharXY = vec2( 1.0, iResolution.y - gvFontSize.y - 1.);
     
     //color = drawStatus( color, fragCoord, nameLit, equalsLit );
-    color = Char( color, COLOR_ZOOM  , fragCoord, 90.0 ); // Z
-    color = Char( color, COLOR_EQUALS, fragCoord, 61.0 ); // =
+    color = Char( color, COLOR_ZOOM  , fragCoord, 90.0); // Z
+    color = Char( color, COLOR_EQUALS, fragCoord, 61.0); // =
 
     // show Zoom factor in upper-left
-    color = Char( color, COLOR_ZOOMFACTOR, fragCoord, ZOOM );    
+    color = Char( color, COLOR_ZOOMFACTOR, fragCoord, ZOOM);
     return color;
 }
 
