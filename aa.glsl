@@ -1,5 +1,5 @@
-/* Anti-Aliasing Tests - rev. 49J
-   May 21-29, 2016
+/* Anti-Aliasing Tests - rev. 50J
+   May 21 - June 4, 2016
 
    Authors: 
      Jason Doucette:    https://www.shadertoy.com/user/JasonD        
@@ -443,7 +443,8 @@ float pattern2(vec2 uv)
     p1 = rotateXY( p1, angle );
     // translate back
     p1 += vec2(SHIFT_POSITIVE + 0.5);    
-    float checkerboard1 = float(int(p1.x*NUM_CELLS)) + float(int(p1.y*NUM_CELLS));
+
+    p1.xy = floor(p1.xy * NUM_CELLS);
     
     // 2. 45 degree rotated checkerboard, zoomed to match vertices
     
@@ -454,11 +455,12 @@ float pattern2(vec2 uv)
     // expand
     p2 *= 1.41421356237;
     // translate back
-    p2 += vec2(SHIFT_POSITIVE + 0.5);
-    float checkerboard2 = float(int(p2.x*NUM_CELLS)) + float(int(p2.y*NUM_CELLS));
+    p2 += vec2(SHIFT_POSITIVE + 0.5);    
+
+    p2.xy = floor(p2.xy * NUM_CELLS);
     
     // combine
-    return mod(checkerboard1 + checkerboard2, 2.0);
+    return mod(p1.x+p1.y + p2.x+p2.y, 2.0);
 }
 
 // patternSet_3Dchecker
@@ -484,12 +486,8 @@ float pattern3(vec2 uv)
     cam.xy = rotateXY( cam.xy, angle );
 
     // textured
-    return
-        mod(
-            float(fract(cam.x) < 0.5) + 
-            float(fract(cam.y) < 0.5), 
-            2.0
-           );
+	cam.xy = floor(cam.xy * 2.0); 
+    return mod(cam.x+cam.y, 2.0);
 }
 
 float pixelSet(vec2 uv)
