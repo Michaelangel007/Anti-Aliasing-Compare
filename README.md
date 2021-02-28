@@ -1,7 +1,6 @@
 # Comparing Anti-Aliasing Techniques
 
-View on ShaderToy.com:
-https://www.shadertoy.com/view/4dGXW1
+- View on ShaderToy.com: https://www.shadertoy.com/view/4dGXW1
 
 # Authors:
 
@@ -24,6 +23,6 @@ https://www.shadertoy.com/view/4dGXW1
 
 # Control
 
-Mouse click and move:
-left/right = move split screen (AA methods: left to right)
-up/down = change zoom factor
+- Mouse click and move:
+- left/right = move split screen (AA methods: left to right)
+- up/down = change zoom factor
